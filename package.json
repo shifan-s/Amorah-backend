@@ -1,0 +1,44 @@
+{
+  "name": "amorah-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "admin:create": "node scripts/createAdmin.js",
+    "catalogue:setup-client": "node scripts/setupClientCatalogue.js",
+    "data:report-test": "node scripts/reportTestData.js",
+    "db:check-indexes": "node scripts/checkProductionIndexes.js",
+    "dev": "nodemon src/server.js",
+    "invoice:assign": "node scripts/assignInvoiceNumbers.js",
+    "remove:demo-products": "node scripts/removeDemoProducts.js",
+    "seed:demo-products": "node scripts/seedDemoProducts.js",
+    "start": "node src/server.js",
+    "check": "node --check src/server.js",
+    "cloudinary:test": "node scripts/testCloudinary.js",
+    "email:test": "node scripts/sendTestEmail.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.9.5",
+    "morgan": "^1.10.0",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.3",
+    "pdfkit": "^0.19.1",
+    "razorpay": "^2.9.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

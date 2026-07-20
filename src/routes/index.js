@@ -1,0 +1,38 @@
+import { Router } from 'express';
+import { welcome } from '../controllers/healthController.js';
+import adminCategoryRoutes from './adminCategoryRoutes.js';
+import adminEmailNotificationRoutes from './adminEmailNotificationRoutes.js';
+import adminOrderRoutes from './adminOrderRoutes.js';
+import adminProductRoutes from './adminProductRoutes.js';
+import adminRefundRoutes from './adminRefundRoutes.js';
+import adminUploadRoutes from './adminUploadRoutes.js';
+import addressRoutes from './addressRoutes.js';
+import authRoutes from './authRoutes.js';
+import cartRoutes from './cartRoutes.js';
+import categoryRoutes from './categoryRoutes.js';
+import checkoutRoutes from './checkoutRoutes.js';
+import healthRoutes from './healthRoutes.js';
+import orderRoutes from './orderRoutes.js';
+import paymentRoutes from './paymentRoutes.js';
+import productRoutes from './productRoutes.js';
+
+const router = Router();
+
+router.get('/', welcome);
+router.use('/', healthRoutes);
+router.use('/auth', authRoutes);
+router.use('/cart', cartRoutes);
+router.use('/checkout', checkoutRoutes);
+router.use('/admin/categories', adminCategoryRoutes);
+router.use('/admin/email-notifications', adminEmailNotificationRoutes);
+router.use('/admin/orders', adminOrderRoutes);
+router.use('/admin/products', adminProductRoutes);
+router.use('/admin/refunds', adminRefundRoutes);
+router.use('/admin/uploads', adminUploadRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/orders', orderRoutes);
+router.use('/payments', paymentRoutes);
+router.use('/products', productRoutes);
+router.use('/users/me/addresses', addressRoutes);
+
+export default router;
