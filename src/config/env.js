@@ -103,7 +103,7 @@ const env = {
   authCookieName: process.env.AUTH_COOKIE_NAME || 'amorah_token',
   cookieSecure: parseBoolean(process.env.COOKIE_SECURE, false),
   cookieSameSite:
-    process.env.COOKIE_SAME_SITE || (process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+    process.env.NODE_ENV === 'production' ? 'none' : process.env.COOKIE_SAME_SITE || 'lax',
   cookieDomain: process.env.COOKIE_DOMAIN || '',
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
   maintenanceMode: parseBoolean(process.env.MAINTENANCE_MODE, false),
