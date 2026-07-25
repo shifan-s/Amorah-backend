@@ -3,11 +3,36 @@ import { detectRazorpayKeyMode, maskRazorpayKeyId } from '../utils/razorpayMode.
 
 dotenv.config();
 
+const amorahProductionOrigins = ['https://amorah.online', 'https://www.amorah.online'];
+
 function parseOrigins(value = '') {
   return value
     .split(',')
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
     .filter(Boolean);
+}
+
+function includeHostnameVariants(origins = []) {
+  const expandedOrigins = new Set(origins);
+
+  origins.forEach((origin) => {
+    try {
+      const url = new URL(origin);
+      const hostname = url.hostname;
+
+      if (hostname.startsWith('www.')) {
+        url.hostname = hostname.slice(4);
+      } else {
+        url.hostname = `www.${hostname}`;
+      }
+
+      expandedOrigins.add(url.origin);
+    } catch {
+      // Invalid origins remain available for production validation and diagnostics.
+    }
+  });
+
+  return [...expandedOrigins];
 }
 
 function parseBoolean(value, defaultValue = false) {
@@ -53,17 +78,32 @@ function parseInvoiceDocumentType(value = 'receipt') {
   return 'receipt';
 }
 
+const configuredClientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+const developmentOrigins = process.env.NODE_ENV === 'production' ? [] : ['http://localhost:5173'];
+const configuredOrigins = parseOrigins(
+  [
+    ...developmentOrigins,
+    ...amorahProductionOrigins,
+    process.env.ALLOWED_ORIGINS,
+    process.env.FRONTEND_URL,
+    configuredClientUrl,
+  ]
+    .filter(Boolean)
+    .join(','),
+);
+
 const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 5000,
   mongoUri: process.env.MONGODB_URI || '',
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
-  allowedOrigins: parseOrigins(process.env.ALLOWED_ORIGINS || process.env.CLIENT_URL || 'http://localhost:5173'),
+  clientUrl: configuredClientUrl,
+  allowedOrigins: includeHostnameVariants(configuredOrigins),
   jwtSecret: process.env.JWT_SECRET || '',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   authCookieName: process.env.AUTH_COOKIE_NAME || 'amorah_token',
   cookieSecure: parseBoolean(process.env.COOKIE_SECURE, false),
-  cookieSameSite: process.env.COOKIE_SAME_SITE || 'lax',
+  cookieSameSite:
+    process.env.COOKIE_SAME_SITE || (process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   cookieDomain: process.env.COOKIE_DOMAIN || '',
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
   maintenanceMode: parseBoolean(process.env.MAINTENANCE_MODE, false),
