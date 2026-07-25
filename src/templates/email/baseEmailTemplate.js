@@ -13,7 +13,7 @@ const colors = {
 
 export function baseEmailTemplate({ title, preview = '', content, cta, footerNote = '' }) {
   const logo = env.emailLogoUrl
-    ? `<img src="${escapeHtml(env.emailLogoUrl)}" alt="Amorah by N-ZAN Designs" style="max-width:150px;height:auto;display:block;" />`
+    ? `<img src="${escapeHtml(env.emailLogoUrl)}" alt="Amorah N-ZAN Designs" style="max-width:150px;height:auto;display:block;" />`
     : `<div style="font-size:28px;letter-spacing:5px;color:${colors.maroon};font-weight:700;">AMORAH</div>
        <div style="font-size:12px;letter-spacing:2px;color:${colors.muted};margin-top:4px;">By N-ZAN Designs</div>`;
   const supportEmail = env.supportEmail || env.emailReplyTo || env.emailFromAddress || '';

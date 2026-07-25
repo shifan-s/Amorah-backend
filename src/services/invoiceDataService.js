@@ -67,7 +67,7 @@ export function buildBusinessDetails(order) {
     heading: documentType === 'tax_invoice' ? 'Tax Invoice' : documentType === 'invoice' ? 'Invoice' : 'Order Receipt',
     legalName: clean(env.businessLegalName),
     displayName: clean(env.businessDisplayName || 'Amorah'),
-    brandLine: 'BY N-ZAN DESIGNS',
+    brandLine: '',
     address,
     email: clean(env.businessEmail || env.supportEmail),
     phone: clean(env.businessPhone),

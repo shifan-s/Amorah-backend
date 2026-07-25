@@ -42,6 +42,12 @@ function validateInput() {
   return { fullName, email, password };
 }
 
+function shouldUpdateExistingPassword() {
+  return ['true', '1', 'yes', 'on'].includes(
+    String(process.env.ADMIN_UPDATE_PASSWORD || '').trim().toLowerCase(),
+  );
+}
+
 async function createAdmin() {
   const { fullName, email, password } = validateInput();
 
@@ -51,7 +57,17 @@ async function createAdmin() {
     const existingUser = await User.findOne({ email }).select('+passwordHash role status');
 
     if (existingUser?.role === 'admin') {
-      console.log(`Admin account already exists for ${email}.`);
+      if (!shouldUpdateExistingPassword()) {
+        console.log(
+          `Admin account already exists for ${email}. Set ADMIN_UPDATE_PASSWORD=true to replace its password.`,
+        );
+        return;
+      }
+
+      existingUser.passwordHash = await hashPassword(password);
+      existingUser.status = 'active';
+      await existingUser.save();
+      console.log(`Admin password updated and account activated for ${email}.`);
       return;
     }
 

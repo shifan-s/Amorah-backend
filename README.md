@@ -1,6 +1,6 @@
 # Amorah Backend
 
-Node.js, Express.js and MongoDB backend foundation for Amorah by N-ZAN Designs.
+Node.js, Express.js and MongoDB backend foundation for Amorah N-ZAN Designs.
 
 ## Stack
 

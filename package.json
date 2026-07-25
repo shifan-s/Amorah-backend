@@ -6,6 +6,7 @@
   "main": "src/server.js",
   "scripts": {
     "admin:create": "node scripts/createAdmin.js",
+    "seed:admin": "node scripts/createAdmin.js",
     "catalogue:setup-client": "node scripts/setupClientCatalogue.js",
     "data:report-test": "node scripts/reportTestData.js",
     "db:check-indexes": "node scripts/checkProductionIndexes.js",

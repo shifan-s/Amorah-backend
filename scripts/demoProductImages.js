@@ -114,7 +114,7 @@ export function makeDemoImageFiles(product) {
         </g>
         <rect x="110" y="1010" width="680" height="96" fill="#FFFDF8" stroke="#DED2C5" stroke-width="2"/>
         <text x="450" y="1046" text-anchor="middle" font-family="Georgia, serif" font-size="30" font-weight="700" fill="#302925">${title}</text>
-        <text x="450" y="1082" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#746A63">${escapeXml(label)} | ${colour} | Amorah by N-ZAN Designs</text>
+        <text x="450" y="1082" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#746A63">${escapeXml(label)} | ${colour} | Amorah</text>
       </svg>
     `;
 
