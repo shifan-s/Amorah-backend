@@ -135,6 +135,7 @@ const env = {
   emailFromAddress: process.env.EMAIL_FROM_ADDRESS || '',
   emailReplyTo: process.env.EMAIL_REPLY_TO || '',
   supportEmail: process.env.SUPPORT_EMAIL || '',
+  contactEnquiryEmail: process.env.CONTACT_ENQUIRY_EMAIL || 'contact@amorah.online',
   adminOrderEmail: process.env.ADMIN_ORDER_EMAIL || '',
   emailLogoUrl: process.env.EMAIL_LOGO_URL || '',
   frontendUrl: process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173',
