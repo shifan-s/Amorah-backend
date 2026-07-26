@@ -8,7 +8,10 @@ export const createContactEnquiry = asyncHandler(async (req, res) => {
   const mailer = getMailer();
 
   if (!mailer) {
-    throw new ApiError(503, 'Enquiry email is temporarily unavailable. Please try again later.');
+    throw new ApiError(
+      503,
+      'Your enquiry was not sent because our email service is temporarily unavailable. Please email contact@amorah.online directly.',
+    );
   }
 
   const enquiry = {
@@ -33,7 +36,10 @@ export const createContactEnquiry = asyncHandler(async (req, res) => {
       html: content.html,
     });
   } catch {
-    throw new ApiError(502, 'Unable to send your enquiry right now. Please try again later.');
+    throw new ApiError(
+      502,
+      'Your enquiry could not be delivered. Please try again or email contact@amorah.online directly.',
+    );
   }
 
   res.status(201).json({
