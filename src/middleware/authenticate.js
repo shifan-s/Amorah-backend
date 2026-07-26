@@ -12,7 +12,9 @@ function sendAuthenticationError(res) {
 }
 
 const authenticate = asyncHandler(async (req, res, next) => {
-  const token = req.cookies?.[env.authCookieName];
+  const authorization = req.get('authorization') || '';
+  const bearerToken = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+  const token = bearerToken || req.cookies?.[env.authCookieName];
 
   if (!token) {
     sendAuthenticationError(res);

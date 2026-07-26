@@ -5,6 +5,7 @@ import {
   changeCustomerPassword,
   getCurrentUser,
   loginCustomer,
+  refreshCustomerSession,
   registerCustomer,
   updateCustomerProfile,
 } from '../services/authService.js';
@@ -14,7 +15,7 @@ function setAuthCookie(res, token) {
 }
 
 export const register = asyncHandler(async (req, res) => {
-  const { user, token } = await registerCustomer(req.body);
+  const { user, token, refreshToken } = await registerCustomer(req.body);
 
   setAuthCookie(res, token);
 
@@ -23,12 +24,14 @@ export const register = asyncHandler(async (req, res) => {
     message: 'Account created successfully',
     data: {
       user,
+      accessToken: token,
+      refreshToken,
     },
   });
 });
 
 export const login = asyncHandler(async (req, res) => {
-  const { user, token } = await loginCustomer(req.body);
+  const { user, token, refreshToken } = await loginCustomer(req.body);
 
   setAuthCookie(res, token);
 
@@ -37,7 +40,20 @@ export const login = asyncHandler(async (req, res) => {
     message: 'Logged in successfully',
     data: {
       user,
+      accessToken: token,
+      refreshToken,
     },
+  });
+});
+
+export const refresh = asyncHandler(async (req, res) => {
+  const { user, token, refreshToken } = await refreshCustomerSession(req.body.refreshToken);
+  setAuthCookie(res, token);
+
+  res.status(200).json({
+    success: true,
+    message: 'Session refreshed',
+    data: { user, accessToken: token, refreshToken },
   });
 });
 

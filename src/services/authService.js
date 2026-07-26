@@ -1,7 +1,7 @@
 import User from '../models/User.js';
 import ApiError from '../utils/ApiError.js';
 import { hashPassword } from '../utils/password.js';
-import { signAuthToken } from '../utils/jwt.js';
+import { signAuthToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 
 const invalidLoginMessage = 'Invalid email or password.';
 
@@ -66,10 +66,12 @@ export async function registerCustomer(payload) {
   });
 
   const token = signAuthToken(user);
+  const refreshToken = signRefreshToken(user);
 
   return {
     user: user.toSafeObject(),
     token,
+    refreshToken,
   };
 }
 
@@ -95,10 +97,24 @@ export async function loginCustomer(payload) {
   await user.save();
 
   const token = signAuthToken(user);
+  const refreshToken = signRefreshToken(user);
 
   return {
     user: user.toSafeObject(),
     token,
+    refreshToken,
+  };
+}
+
+export async function refreshCustomerSession(token) {
+  const payload = verifyRefreshToken(token);
+  const user = await User.findById(payload.sub);
+  ensureActiveUser(user);
+
+  return {
+    user: user.toSafeObject(),
+    token: signAuthToken(user),
+    refreshToken: signRefreshToken(user),
   };
 }
 

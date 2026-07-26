@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   changePassword,
   login,
+  refresh,
   logout,
   me,
   register,
@@ -21,6 +22,7 @@ const router = Router();
 
 router.post('/register', authRateLimiter, registerValidator, validateRequest, register);
 router.post('/login', authRateLimiter, loginValidator, validateRequest, login);
+router.post('/refresh', authRateLimiter, refresh);
 router.post('/logout', logout);
 router.get('/me', authenticate, me);
 router.patch('/profile', authenticate, updateProfileValidator, validateRequest, updateProfile);

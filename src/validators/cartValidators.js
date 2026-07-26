@@ -56,7 +56,7 @@ export const cartItemIdValidator = [
 
 export const mergeCartValidator = [
   body().custom((value) => {
-    const allowedFields = ['items'];
+    const allowedFields = ['items', 'mergeId'];
     const unknownField = Object.keys(value || {}).find((field) => !allowedFields.includes(field));
 
     if (unknownField) {
@@ -78,11 +78,13 @@ export const mergeCartValidator = [
 
     return true;
   }),
-  body('items.*.productId').custom(isObjectId).withMessage('Product ID must be valid'),
-  body('items.*.variantId').custom(isObjectId).withMessage('Variant ID must be valid'),
-  body('items.*.sizeId').custom(isObjectId).withMessage('Size ID must be valid'),
+  body('mergeId').isString().trim().isLength({ min: 8, max: 100 }).withMessage('Merge ID must be valid'),
+  body('items.*.productId').optional().isString(),
+  body('items.*.variantId').optional().isString(),
+  body('items.*.sizeId').optional().isString(),
   body('items.*.quantity')
-    .isInt({ min: 1, max: maxQuantity })
-    .withMessage(`Quantity must be between 1 and ${maxQuantity}`)
+    .optional()
+    .isInt({ max: maxQuantity })
+    .withMessage(`Quantity must be at most ${maxQuantity}`)
     .toInt(),
 ];

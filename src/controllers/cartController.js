@@ -69,11 +69,11 @@ export const clearCart = asyncHandler(async (req, res) => {
 });
 
 export const mergeCart = asyncHandler(async (req, res) => {
-  const { cart, warnings } = await mergeGuestCart(req.user.id, req.body.items);
+  const { cart, warnings } = await mergeGuestCart(req.user.id, req.body.items, req.body.mergeId);
 
   res.status(200).json({
     success: true,
-    message: 'Guest cart merged successfully',
+    message: 'Cart merged successfully',
     data: {
       cart,
       warnings,

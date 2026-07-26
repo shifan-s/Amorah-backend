@@ -99,7 +99,9 @@ const env = {
   clientUrl: configuredClientUrl,
   allowedOrigins: includeHostnameVariants(configuredOrigins),
   jwtSecret: process.env.JWT_SECRET || '',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '15m',
+  jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || '',
+  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   authCookieName: process.env.AUTH_COOKIE_NAME || 'amorah_token',
   cookieSecure: parseBoolean(process.env.COOKIE_SECURE, false),
   cookieSameSite:
@@ -194,6 +196,7 @@ export function validateEnv() {
     CLIENT_URL: env.clientUrl,
     ALLOWED_ORIGINS: env.allowedOrigins.join(','),
     JWT_SECRET: env.jwtSecret,
+    JWT_REFRESH_SECRET: env.jwtRefreshSecret,
   });
 
   if (env.jwtSecret.length < 32) {

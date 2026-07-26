@@ -288,12 +288,19 @@ function guestItemKey(item) {
   return [idString(item.productId), idString(item.variantId), idString(item.sizeId)].join(':');
 }
 
-export async function mergeGuestCart(userId, items = []) {
-  const cart = await findOrCreateCart(userId);
+export async function mergeGuestCart(userId, items = [], mergeId) {
+  const cart = await Cart.findOne({ user: userId }).select('+completedMergeIds') || await Cart.create({ user: userId, items: [] });
   const warnings = [];
   const mergedPayload = new Map();
 
   items.forEach((item) => {
+    if (
+      !mongoose.Types.ObjectId.isValid(item?.productId) ||
+      !mongoose.Types.ObjectId.isValid(item?.variantId) ||
+      !mongoose.Types.ObjectId.isValid(item?.sizeId)
+    ) {
+      return;
+    }
     const key = guestItemKey(item);
     const existing = mergedPayload.get(key);
     const quantity = Math.max(1, Math.floor(item.quantity || 1));
@@ -310,6 +317,10 @@ export async function mergeGuestCart(userId, items = []) {
       quantity,
     });
   });
+
+  if (cart.completedMergeIds.includes(mergeId)) {
+    return { cart: await buildCartResponse(cart), warnings };
+  }
 
   for (const item of mergedPayload.values()) {
     try {
@@ -349,6 +360,8 @@ export async function mergeGuestCart(userId, items = []) {
     }
   }
 
+  await cart.save();
+  cart.completedMergeIds = [...cart.completedMergeIds.slice(-19), mergeId];
   await cart.save();
 
   return {

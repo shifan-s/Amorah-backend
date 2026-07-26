@@ -3,7 +3,7 @@ import multer from 'multer';
 import env from '../config/env.js';
 import ApiError from '../utils/ApiError.js';
 
-function normalizeError(error) {
+function normalizeError(error, req) {
   if (error instanceof ApiError) {
     return error;
   }
@@ -40,11 +40,11 @@ function normalizeError(error) {
     return new ApiError(409, 'Duplicate value already exists');
   }
 
-  return new ApiError(500, 'Internal server error');
+  return new ApiError(500, req?.path === '/cart/merge' ? 'Unable to merge cart' : 'Internal server error');
 }
 
 export default function errorHandler(error, req, res, next) {
-  const normalizedError = normalizeError(error);
+  const normalizedError = normalizeError(error, req);
   const response = {
     success: false,
     message: normalizedError.message,

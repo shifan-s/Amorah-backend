@@ -46,6 +46,11 @@ const cartSchema = new mongoose.Schema(
       type: [cartItemSchema],
       default: [],
     },
+    completedMergeIds: {
+      type: [String],
+      default: [],
+      select: false,
+    },
   },
   {
     timestamps: true,
