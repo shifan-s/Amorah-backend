@@ -19,6 +19,9 @@ const orderStatuses = [
   'returned',
   'refund_initiated',
   'refunded',
+  'delivery_refused',
+  'return_to_origin',
+  'returned_to_seller',
 ];
 
 const addressSnapshotSchema = new mongoose.Schema(
@@ -103,6 +106,12 @@ const statusTimelineSchema = new mongoose.Schema(
       ref: 'User',
       default: null,
     },
+    changedByType: {
+      type: String,
+      enum: ['admin', 'customer', 'system'],
+      default: 'system',
+    },
+    note: { type: String, trim: true, maxlength: 500, default: '' },
   },
   { _id: false },
 );
@@ -327,6 +336,8 @@ const orderSchema = new mongoose.Schema(
 );
 
 orderSchema.index({ customer: 1, createdAt: -1 });
+orderSchema.index({ orderStatus: 1, createdAt: -1 });
+orderSchema.index({ paymentStatus: 1, createdAt: -1 });
 orderSchema.index({ 'refundSummary.status': 1 });
 orderSchema.index({ 'invoice.number': 1 }, { unique: true, sparse: true });
 orderSchema.index({ customer: 1, checkoutIdempotencyKey: 1 }, { unique: true });
