@@ -1,9 +1,11 @@
 import User from '../models/User.js';
 import ApiError from '../utils/ApiError.js';
 import { hashPassword } from '../utils/password.js';
+import crypto from 'crypto';
 import { signAuthToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 
 const invalidLoginMessage = 'Invalid email or password.';
+const hashRefreshToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
@@ -67,6 +69,8 @@ export async function registerCustomer(payload) {
 
   const token = signAuthToken(user);
   const refreshToken = signRefreshToken(user);
+  user.refreshTokenHash = hashRefreshToken(refreshToken);
+  await user.save();
 
   return {
     user: user.toSafeObject(),
@@ -98,6 +102,8 @@ export async function loginCustomer(payload) {
 
   const token = signAuthToken(user);
   const refreshToken = signRefreshToken(user);
+  user.refreshTokenHash = hashRefreshToken(refreshToken);
+  await user.save();
 
   return {
     user: user.toSafeObject(),
@@ -108,14 +114,33 @@ export async function loginCustomer(payload) {
 
 export async function refreshCustomerSession(token) {
   const payload = verifyRefreshToken(token);
-  const user = await User.findById(payload.sub);
+  const user = await User.findById(payload.userId).select('+refreshTokenHash');
   ensureActiveUser(user);
+  if (!user.refreshTokenHash || user.refreshTokenHash !== hashRefreshToken(token)) {
+    throw new ApiError(401, 'Your session has expired. Please log in again.');
+  }
+  const refreshToken = signRefreshToken(user);
+  user.refreshTokenHash = hashRefreshToken(refreshToken);
+  await user.save();
 
   return {
     user: user.toSafeObject(),
     token: signAuthToken(user),
-    refreshToken: signRefreshToken(user),
+    refreshToken,
   };
+}
+
+export async function revokeCustomerSession(token) {
+  if (!token) return;
+  try {
+    const payload = verifyRefreshToken(token);
+    await User.updateOne(
+      { _id: payload.userId, refreshTokenHash: hashRefreshToken(token) },
+      { $set: { refreshTokenHash: null } },
+    );
+  } catch {
+    // Logout remains idempotent for missing, expired, or already-revoked sessions.
+  }
 }
 
 export async function getCurrentUser(userId) {

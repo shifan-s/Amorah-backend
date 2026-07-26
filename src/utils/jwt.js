@@ -5,7 +5,7 @@ import ApiError from './ApiError.js';
 export function signAuthToken(user) {
   return jwt.sign(
     {
-      sub: user.id || user._id.toString(),
+      userId: user.id || user._id.toString(),
       role: user.role,
       type: 'access',
     },
@@ -31,7 +31,7 @@ export function verifyAuthToken(token) {
 export function signRefreshToken(user) {
   return jwt.sign(
     {
-      sub: user.id || user._id.toString(),
+      userId: user.id || user._id.toString(),
       role: user.role,
       type: 'refresh',
     },

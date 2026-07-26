@@ -4,7 +4,6 @@ import adminCategoryRoutes from './adminCategoryRoutes.js';
 import adminEmailNotificationRoutes from './adminEmailNotificationRoutes.js';
 import adminOrderRoutes from './adminOrderRoutes.js';
 import adminProductRoutes from './adminProductRoutes.js';
-import adminRefundRoutes from './adminRefundRoutes.js';
 import adminUploadRoutes from './adminUploadRoutes.js';
 import addressRoutes from './addressRoutes.js';
 import authRoutes from './authRoutes.js';
@@ -16,6 +15,10 @@ import healthRoutes from './healthRoutes.js';
 import orderRoutes from './orderRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
 import productRoutes from './productRoutes.js';
+import notificationRoutes from './notificationRoutes.js';
+import userRoutes from './userRoutes.js';
+import adminCustomerRoutes from './adminCustomerRoutes.js';
+import adminDashboardRoutes from './adminDashboardRoutes.js';
 
 const router = Router();
 
@@ -26,15 +29,18 @@ router.use('/cart', cartRoutes);
 router.use('/checkout', checkoutRoutes);
 router.use('/contact', contactRoutes);
 router.use('/admin/categories', adminCategoryRoutes);
+router.use('/admin/customers', adminCustomerRoutes);
+router.use('/admin/dashboard', adminDashboardRoutes);
 router.use('/admin/email-notifications', adminEmailNotificationRoutes);
 router.use('/admin/orders', adminOrderRoutes);
 router.use('/admin/products', adminProductRoutes);
-router.use('/admin/refunds', adminRefundRoutes);
 router.use('/admin/uploads', adminUploadRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/orders', orderRoutes);
+router.use('/notifications', notificationRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/products', productRoutes);
 router.use('/users/me/addresses', addressRoutes);
+router.use('/users', userRoutes);
 
 export default router;

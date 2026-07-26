@@ -45,7 +45,7 @@ function baseCookieOptions() {
 export function getAuthCookieOptions() {
   return {
     ...baseCookieOptions(),
-    maxAge: parseJwtMaxAge(env.jwtExpiresIn),
+    maxAge: parseJwtMaxAge(env.jwtRefreshExpiresIn),
   };
 }
 

@@ -147,6 +147,11 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Password hash is required'],
       select: false,
     },
+    refreshTokenHash: {
+      type: String,
+      select: false,
+      default: null,
+    },
     role: {
       type: String,
       enum: roles,

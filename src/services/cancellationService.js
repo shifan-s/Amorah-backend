@@ -4,6 +4,7 @@ import Product from '../models/Product.js';
 import ApiError from '../utils/ApiError.js';
 import { initiateFullRefund } from './refundService.js';
 import { sendCancellationApprovedEmail } from './emailService.js';
+import { createOrderNotification } from './notificationService.js';
 
 const cancellableStatuses = ['pending_payment', 'confirmed', 'processing', 'packed'];
 const dispatchedStatuses = ['shipped', 'out_for_delivery', 'delivered', 'delivery_refused', 'return_to_origin', 'returned_to_seller'];
@@ -30,7 +31,6 @@ async function restoreStock(order, session) {
 
 export async function cancelBeforeDispatch({ orderId, customerId, admin, reason }) {
   const safeReason = cleanReason(reason);
-  if (!safeReason) throw new ApiError(422, 'Cancellation reason is required', []);
   const session = await mongoose.startSession();
   let cancelled;
   try {
@@ -64,6 +64,12 @@ export async function cancelBeforeDispatch({ orderId, customerId, admin, reason 
     refund = await initiateFullRefund({ orderNumber: cancelled.orderNumber, reason: safeReason, adminId: admin?.id || customerId });
   }
   const populated = await Order.findById(cancelled._id).populate('customer', 'fullName email mobile');
+  await createOrderNotification(
+    populated,
+    'Order cancelled',
+    `Your order #${populated.orderNumber} has been cancelled.`,
+    'order_cancelled',
+  );
   const notification = await sendCancellationApprovedEmail(populated).catch((error) => ({ sent: false, failed: true, reason: error.message }));
   return { order: populated, refund, notification };
 }

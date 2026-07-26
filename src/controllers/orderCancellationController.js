@@ -7,7 +7,7 @@ import { cancelBeforeDispatch } from '../services/cancellationService.js';
 
 export const cancelMyOrder = asyncHandler(async (req, res) => {
   const result = await cancelBeforeDispatch({ orderId: req.params.orderId, customerId: req.user.id, reason: req.body.reason });
-  res.json({ success: true, message: result.refund ? 'Order cancelled and refund initiated successfully.' : 'Order cancelled successfully.', data: { orderNumber: result.order.orderNumber, orderStatus: result.order.orderStatus, refund: result.refund, notification: result.notification } });
+  res.json({ success: true, message: 'Order cancelled successfully.', data: { orderNumber: result.order.orderNumber, orderStatus: result.order.orderStatus } });
 });
 
 export const reportOrderIssue = asyncHandler(async (req, res) => {

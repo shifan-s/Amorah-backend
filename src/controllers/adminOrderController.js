@@ -12,6 +12,7 @@ import {
   sendOrderShippedEmail,
 } from '../services/emailService.js';
 import { cancelBeforeDispatch } from '../services/cancellationService.js';
+import { createOrderNotification } from '../services/notificationService.js';
 
 const statusAliases = {
   new: 'confirmed',
@@ -184,6 +185,12 @@ async function transition(req, target, allowed, message, emailSender) {
     ).populate('customer', 'fullName email mobile');
     if (!dispatched) throw new ApiError(409, 'The order was cancelled or changed before dispatch could be completed.', []);
     await AdminAudit.create({ admin: req.user.id, adminName: req.user.fullName || 'Admin', action: message, order: dispatched._id, orderNumber: dispatched.orderNumber });
+    await createOrderNotification(
+      dispatched,
+      'Order dispatched',
+      `Your order #${dispatched.orderNumber} has been dispatched through ${dispatched.shipment.courierName}. Tracking ID: ${dispatched.shipment.trackingNumber}.`,
+      'order_dispatched',
+    );
     const notification = await emailSender(dispatched);
     res.json({ success: true, message: notification.sent ? 'Order updated successfully. The customer has been notified.' : 'Order updated, but the email notification could not be sent.', data: { order: serialize(dispatched), notification } });
     return;
@@ -193,16 +200,49 @@ async function transition(req, target, allowed, message, emailSender) {
   if (target === 'out_for_delivery') order.shipment.outForDeliveryAt = new Date();
   if (target === 'delivered') order.shipment.deliveredAt = new Date();
   await order.save();
+  await createOrderNotification(
+    order,
+    message,
+    `Your order #${order.orderNumber} is now ${publicStatus(target).replaceAll('_', ' ')}.`,
+    `order_${target}`,
+  );
   await AdminAudit.create({ admin: req.user.id, adminName: req.user.fullName || 'Admin', action: message, order: order._id, orderNumber: order.orderNumber });
   const notification = emailSender ? await emailSender(order) : { sent: false, skipped: true };
   res.json({ success: true, message: notification.sent ? 'Order updated successfully. The customer has been notified.' : 'Order updated, but the email notification could not be sent.', data: { order: serialize(order), notification } });
 }
 
 export const confirmOrder = asyncHandler((req, res) => transition(req, 'confirmed', ['confirmed'], 'Order confirmed', null));
+export const processOrder = asyncHandler((req, res) => transition(req, 'processing', ['confirmed'], 'Order processing', null));
 export const packOrder = asyncHandler((req, res) => transition(req, 'packed', ['confirmed', 'processing'], 'Order packed', null));
 export const dispatchOrder = asyncHandler((req, res) => transition(req, 'shipped', ['packed'], 'Order dispatched', sendOrderShippedEmail));
 export const outForDeliveryOrder = asyncHandler((req, res) => transition(req, 'out_for_delivery', ['shipped'], 'Order out for delivery', sendOrderOutForDeliveryEmail));
 export const deliverOrder = asyncHandler((req, res) => transition(req, 'delivered', ['out_for_delivery'], 'Order delivered', sendOrderDeliveredEmail));
+export const updateOrderStatus = asyncHandler((req, res) => {
+  const target = req.body.orderStatus;
+  const transitions = {
+    processing: { allowed: ['confirmed'], message: 'Order processing' },
+    packed: { allowed: ['processing'], message: 'Order packed' },
+    out_for_delivery: { allowed: ['shipped'], message: 'Order out for delivery', email: sendOrderOutForDeliveryEmail },
+    delivered: { allowed: ['out_for_delivery'], message: 'Order delivered', email: sendOrderDeliveredEmail },
+  };
+  const rule = transitions[target];
+  if (!rule) throw new ApiError(422, 'Invalid order-status change.', []);
+  return transition(req, target, rule.allowed, rule.message, rule.email || null);
+});
+
+export const updatePaymentStatus = asyncHandler(async (req, res) => {
+  if (req.body.paymentStatus === 'paid') {
+    throw new ApiError(409, 'Paid status can be set only by verified Razorpay payment confirmation.', []);
+  }
+  if (!['pending', 'failed'].includes(req.body.paymentStatus)) {
+    throw new ApiError(422, 'Invalid payment-status change.', []);
+  }
+  const order = await Order.findById(req.params.orderId);
+  if (!order) throw new ApiError(404, 'Order not found.', []);
+  order.paymentStatus = req.body.paymentStatus;
+  await order.save();
+  res.json({ success: true, message: 'Payment status updated successfully', data: { order: serialize(order) } });
+});
 export const cancelOrder = asyncHandler(async (req, res) => {
   const result = await cancelBeforeDispatch({ orderId: req.params.orderId, admin: req.user, reason: req.body.reason });
   await AdminAudit.create({ admin: req.user.id, adminName: req.user.fullName || 'Admin', action: 'Order cancelled', order: result.order._id, orderNumber: result.order.orderNumber });

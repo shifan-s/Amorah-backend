@@ -14,7 +14,7 @@ function sendAuthenticationError(res) {
 const authenticate = asyncHandler(async (req, res, next) => {
   const authorization = req.get('authorization') || '';
   const bearerToken = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
-  const token = bearerToken || req.cookies?.[env.authCookieName];
+  const token = bearerToken;
 
   if (!token) {
     sendAuthenticationError(res);
@@ -30,7 +30,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
     return;
   }
 
-  const user = await User.findById(payload.sub);
+  const user = await User.findById(payload.userId);
 
   if (!user || user.status === 'disabled') {
     sendAuthenticationError(res);
