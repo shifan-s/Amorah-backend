@@ -70,6 +70,8 @@ function serialize(order) {
     orderStatus: publicStatus(order.orderStatus),
     razorpayOrderId: order.razorpay?.orderId || '',
     razorpayPaymentId: order.razorpay?.paymentId || '',
+    paidAt: order.razorpay?.paidAt || order.paymentCompletedAt || null,
+    paymentFailureReason: order.paymentFailureReason || '',
     shippingAddress: order.shippingAddress,
     shipping: {
       courierName: order.shipment?.courierName || '',

@@ -182,6 +182,24 @@ export function validateEnv() {
     throw new Error('JWT_SECRET is required to start the Amorah API.');
   }
 
+  const razorpayValues = {
+    RAZORPAY_KEY_ID: env.razorpayKeyId,
+    RAZORPAY_KEY_SECRET: env.razorpayKeySecret,
+    RAZORPAY_WEBHOOK_SECRET: env.razorpayWebhookSecret,
+  };
+  const configuredRazorpayValues = Object.values(razorpayValues).filter((value) =>
+    String(value || '').trim(),
+  );
+
+  if (configuredRazorpayValues.length > 0 && configuredRazorpayValues.length !== 3) {
+    const missingRazorpayValues = Object.entries(razorpayValues)
+      .filter(([, value]) => !String(value || '').trim())
+      .map(([name]) => name);
+    throw new Error(
+      `Razorpay configuration is incomplete. Missing: ${missingRazorpayValues.join(', ')}.`,
+    );
+  }
+
   if (env.nodeEnv !== 'production') {
     if (detectRazorpayKeyMode(env.razorpayKeyId) === 'live') {
       console.warn(`Razorpay Live Key ID detected outside production: ${maskRazorpayKeyId(env.razorpayKeyId)}.`);

@@ -14,6 +14,7 @@ import {
   calculateCheckoutSummary,
   resolveCheckoutAddress,
   sanitizeCustomerNotes,
+  validateClientCartSelection,
   validateCheckoutCart,
 } from './checkoutService.js';
 
@@ -123,12 +124,22 @@ function orderItemPayload(item) {
 }
 
 function buildPaymentConfig(order, user, selectedAddress) {
+  const priceSummary = {
+    subtotal: order.subtotal,
+    shippingCharge: order.shippingCharge,
+    discount: 0,
+    tax: order.tax,
+    total: order.total,
+    currency: order.currency,
+  };
+
   return {
-    keyId: env.razorpayKeyId,
     orderNumber: order.orderNumber,
+    orderId: order.razorpay.orderId,
     razorpayOrderId: order.razorpay.orderId,
     amount: amountToPaise(order.total),
     currency: order.currency,
+    priceSummary,
     companyName: env.razorpayCompanyName,
     description: env.razorpayCompanyDescription,
     logoUrl: env.razorpayLogoUrl,
@@ -141,7 +152,8 @@ function buildPaymentConfig(order, user, selectedAddress) {
 }
 
 async function createInternalOrder(user, payload) {
-  const { items } = await validateCheckoutCart(user.id);
+  const { cart, items } = await validateCheckoutCart(user.id);
+  validateClientCartSelection(payload.items, cart.items);
   const { shippingAddress, billingAddress } = resolveCheckoutAddress(user, payload);
   const customerNotes = sanitizeCustomerNotes(payload.customerNotes);
   const summary = calculateCheckoutSummary(items);
@@ -235,6 +247,12 @@ export async function createRazorpayPaymentOrder(user, payload) {
     order.razorpay.orderId = razorpayOrder.id;
     order.paymentInitiatedAt = now();
     await order.save();
+
+    if (env.nodeEnv === 'development') {
+      console.info(`[Razorpay] Calculated total: INR ${order.total}`);
+      console.info(`[Razorpay] Order amount: ${amount} paise`);
+      console.info(`[Razorpay] Order ID: ${razorpayOrder.id}`);
+    }
 
     return buildPaymentConfig(order, user, order.shippingAddress);
   } catch (error) {
@@ -508,9 +526,25 @@ export async function verifyRazorpayPayment(userId, payload) {
     throw new ApiError(400, 'Payment signature verification failed', []);
   }
 
+  const paymentOwner = await Order.findOne({
+    'razorpay.paymentId': payload.razorpay_payment_id,
+    _id: { $ne: order._id },
+  }).select('_id');
+
+  if (paymentOwner) {
+    throw new ApiError(409, 'This Razorpay payment is already linked to another order', []);
+  }
+
   order.razorpay.checkoutSignatureVerified = true;
   order.razorpay.paymentId = payload.razorpay_payment_id;
-  await order.save();
+  try {
+    await order.save();
+  } catch (error) {
+    if (error?.code === 11000) {
+      throw new ApiError(409, 'This Razorpay payment is already linked to another order', []);
+    }
+    throw error;
+  }
 
   const payment = await fetchAndValidateRazorpayPayment(order, payload.razorpay_payment_id);
   order.razorpay.lastPaymentStatus = payment.status;
@@ -606,9 +640,39 @@ export async function processRazorpayWebhook(rawBody, headers = {}) {
   }
 
   const signature = headers['x-razorpay-signature'];
+  const eventIdHeader = headers['x-razorpay-event-id'];
+  let receivedEventName = 'unknown';
+
+  if (env.nodeEnv === 'development') {
+    try {
+      const receivedPayload = JSON.parse(
+        Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : String(rawBody),
+      );
+      receivedEventName =
+        typeof receivedPayload?.event === 'string'
+          ? receivedPayload.event.replace(/[\r\n]/g, '').slice(0, 100)
+          : 'unknown';
+    } catch {
+      receivedEventName = 'invalid-json';
+    }
+
+    const safeEventId =
+      typeof eventIdHeader === 'string'
+        ? eventIdHeader.replace(/[\r\n]/g, '').slice(0, 200)
+        : 'not-provided';
+    console.info(`[Razorpay Webhook] Received: ${receivedEventName}`);
+    console.info(`[Razorpay Webhook] Event ID: ${safeEventId}`);
+  }
 
   if (!verifyWebhookSignature(rawBody, signature)) {
+    if (env.nodeEnv === 'development') {
+      console.warn('[Razorpay Webhook] Signature verification failed');
+    }
     throw new ApiError(400, 'Invalid Razorpay webhook signature', []);
+  }
+
+  if (env.nodeEnv === 'development') {
+    console.info('[Razorpay Webhook] Signature verified');
   }
 
   const payload = JSON.parse(Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : String(rawBody));
@@ -616,7 +680,7 @@ export async function processRazorpayWebhook(rawBody, headers = {}) {
   const razorpayOrder = payload.payload?.order?.entity || null;
   const refund = payload.payload?.refund?.entity || null;
   const eventId =
-    headers['x-razorpay-event-id'] ||
+    eventIdHeader ||
     `derived-${crypto.createHash('sha256').update(rawBody).digest('hex')}`;
 
   let event = await RazorpayWebhookEvent.findOne({ eventId });
@@ -630,14 +694,21 @@ export async function processRazorpayWebhook(rawBody, headers = {}) {
   }
 
   if (!event) {
-    event = await RazorpayWebhookEvent.create({
-      eventId,
-      eventType: payload.event || '',
-      razorpayOrderId: payment?.order_id || razorpayOrder?.id || '',
-      razorpayPaymentId: payment?.id || refund?.payment_id || '',
-      processingStatus: 'processing',
-      receivedAt: now(),
-    });
+    try {
+      event = await RazorpayWebhookEvent.create({
+        eventId,
+        eventType: payload.event || '',
+        razorpayOrderId: payment?.order_id || razorpayOrder?.id || '',
+        razorpayPaymentId: payment?.id || refund?.payment_id || '',
+        processingStatus: 'processing',
+        receivedAt: now(),
+      });
+    } catch (error) {
+      if (error?.code === 11000) {
+        return { duplicate: true };
+      }
+      throw error;
+    }
   } else {
     event.processingStatus = 'processing';
     event.errorMessage = '';

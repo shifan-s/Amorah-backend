@@ -241,6 +241,25 @@ export async function validateCheckoutCart(userId) {
   };
 }
 
+export function validateClientCartSelection(clientItems, cartItems) {
+  const normalize = (item) =>
+    [
+      idString(item.productId || item.product),
+      idString(item.variantId),
+      idString(item.sizeId),
+      Number(item.quantity),
+    ].join(':');
+  const clientSelection = [...(clientItems || [])].map(normalize).sort();
+  const storedSelection = [...(cartItems || [])].map(normalize).sort();
+
+  if (
+    clientSelection.length !== storedSelection.length ||
+    clientSelection.some((item, index) => item !== storedSelection[index])
+  ) {
+    throw new ApiError(409, 'Your cart changed. Please review it before paying.', []);
+  }
+}
+
 export async function buildCheckoutPreview(user, payload) {
   const { items } = await validateCheckoutCart(user.id);
   const { shippingAddress, billingAddress } = resolveCheckoutAddress(user, payload);

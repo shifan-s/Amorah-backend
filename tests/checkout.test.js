@@ -6,6 +6,7 @@ import {
   calculateCheckoutSummary,
   resolveCheckoutAddress,
   sanitizeCustomerNotes,
+  validateClientCartSelection,
 } from '../src/services/checkoutService.js';
 import { formatOrderNumber } from '../src/utils/orderNumber.js';
 
@@ -84,4 +85,26 @@ test('copies only addresses that belong to the authenticated user', () => {
 test('rejects HTML in customer notes', () => {
   assert.equal(sanitizeCustomerNotes(' Please gift wrap '), 'Please gift wrap');
   assert.throws(() => sanitizeCustomerNotes('<script>alert(1)</script>'), /Order notes cannot include HTML/);
+});
+
+test('accepts only a client cart selection that matches the authenticated stored cart', () => {
+  const productId = new mongoose.Types.ObjectId().toString();
+  const variantId = new mongoose.Types.ObjectId().toString();
+  const sizeId = new mongoose.Types.ObjectId().toString();
+  const storedItems = [{ product: productId, variantId, sizeId, quantity: 2 }];
+
+  assert.doesNotThrow(() =>
+    validateClientCartSelection(
+      [{ productId, variantId, sizeId, quantity: 2 }],
+      storedItems,
+    ),
+  );
+  assert.throws(
+    () =>
+      validateClientCartSelection(
+        [{ productId, variantId, sizeId, quantity: 1 }],
+        storedItems,
+      ),
+    /cart changed/i,
+  );
 });

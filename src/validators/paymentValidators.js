@@ -22,7 +22,23 @@ function rejectUnknown(allowedFields) {
 }
 
 export const createRazorpayOrderValidator = [
-  rejectUnknown(['shippingAddressId', 'billingSameAsShipping', 'billingAddressId', 'customerNotes', 'idempotencyKey']),
+  rejectUnknown(['items', 'shippingAddressId', 'billingSameAsShipping', 'billingAddressId', 'customerNotes', 'idempotencyKey']),
+  body('items').isArray({ min: 1, max: 50 }).withMessage('Cart items are required'),
+  body('items.*').custom((item) => {
+    const allowed = ['productId', 'variantId', 'sizeId', 'quantity'];
+    const unknown = Object.keys(item || {}).find((field) => !allowed.includes(field));
+    if (unknown) {
+      throw new Error(`${unknown} is not allowed in a cart item`);
+    }
+    return true;
+  }),
+  body('items.*.productId').custom(isObjectId).withMessage('Product ID is invalid'),
+  body('items.*.variantId').custom(isObjectId).withMessage('Variant ID is invalid'),
+  body('items.*.sizeId').custom(isObjectId).withMessage('Size ID is invalid'),
+  body('items.*.quantity')
+    .isInt({ min: 1, max: 20 })
+    .withMessage('Quantity must be between 1 and 20')
+    .toInt(),
   body('shippingAddressId').custom(isObjectId).withMessage('Shipping address is required'),
   body('billingSameAsShipping').isBoolean().withMessage('Billing preference is required').toBoolean(),
   body('billingAddressId').custom((value, { req }) => {
