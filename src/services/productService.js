@@ -729,10 +729,6 @@ export async function deleteProduct(productId) {
   const product = await findAdminProduct(productId);
   const hasOrders = await Order.exists({ 'items.product': product._id });
 
-  if (hasOrders) {
-    throw new ApiError(409, 'Products referenced by orders cannot be permanently deleted. Archive this product instead.', []);
-  }
-
   await Cart.updateMany(
     { 'items.product': product._id },
     { $pull: { items: { product: product._id } } },
@@ -746,10 +742,13 @@ export async function deleteProduct(productId) {
     ),
   ];
   await product.deleteOne();
-  const imageDeletionResults = await Promise.allSettled(imagePublicIds.map((publicId) => deleteImage(publicId)));
+  const imageDeletionResults = hasOrders
+    ? []
+    : await Promise.allSettled(imagePublicIds.map((publicId) => deleteImage(publicId)));
 
   return {
     id: product._id.toString(),
+    imagesRetainedForOrderHistory: Boolean(hasOrders),
     imageCleanupFailed: imageDeletionResults.filter((result) => result.status === 'rejected').length,
   };
 }
