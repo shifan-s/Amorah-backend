@@ -2,6 +2,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import {
   archiveProduct,
   createProduct,
+  deleteProduct,
   getAdminProductById,
   getAdminProducts,
   updateProduct,
@@ -86,5 +87,15 @@ export const archiveAdminProduct = asyncHandler(async (req, res) => {
     data: {
       product,
     },
+  });
+});
+
+export const deleteAdminProduct = asyncHandler(async (req, res) => {
+  const result = await deleteProduct(req.params.productId);
+
+  res.status(200).json({
+    success: true,
+    message: 'Product deleted permanently',
+    data: result,
   });
 });

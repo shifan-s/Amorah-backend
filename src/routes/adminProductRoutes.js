@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   archiveAdminProduct,
   createAdminProduct,
+  deleteAdminProduct,
   getAdminProduct,
   listAdminProducts,
   updateAdminProduct,
@@ -30,6 +31,7 @@ router.get('/:productId', productIdOnlyValidator, validateRequest, getAdminProdu
 router.patch('/:productId', updateProductValidator, validateRequest, updateAdminProduct);
 router.patch('/:productId/status', updateProductStatusValidator, validateRequest, updateAdminProductStatus);
 router.patch('/:productId/stock', updateProductStockValidator, validateRequest, updateAdminProductStock);
-router.delete('/:productId', productIdOnlyValidator, validateRequest, archiveAdminProduct);
+router.patch('/:productId/archive', productIdOnlyValidator, validateRequest, archiveAdminProduct);
+router.delete('/:productId', productIdOnlyValidator, validateRequest, deleteAdminProduct);
 
 export default router;

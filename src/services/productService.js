@@ -1,7 +1,10 @@
 import mongoose from 'mongoose';
+import Cart from '../models/Cart.js';
 import Category from '../models/Category.js';
+import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import ApiError from '../utils/ApiError.js';
+import { deleteImage } from './uploadService.js';
 
 const safeProductFields = [
   'name',
@@ -720,4 +723,33 @@ export async function archiveProduct(productId, adminUserId) {
   await product.save();
 
   return product.toAdminObject();
+}
+
+export async function deleteProduct(productId) {
+  const product = await findAdminProduct(productId);
+  const hasOrders = await Order.exists({ 'items.product': product._id });
+
+  if (hasOrders) {
+    throw new ApiError(409, 'Products referenced by orders cannot be permanently deleted. Archive this product instead.', []);
+  }
+
+  await Cart.updateMany(
+    { 'items.product': product._id },
+    { $pull: { items: { product: product._id } } },
+  );
+  const imagePublicIds = [
+    ...new Set(
+      product.variants
+        .flatMap((variant) => variant.images || [])
+        .map((image) => image.publicId)
+        .filter(Boolean),
+    ),
+  ];
+  await product.deleteOne();
+  const imageDeletionResults = await Promise.allSettled(imagePublicIds.map((publicId) => deleteImage(publicId)));
+
+  return {
+    id: product._id.toString(),
+    imageCleanupFailed: imageDeletionResults.filter((result) => result.status === 'rejected').length,
+  };
 }
