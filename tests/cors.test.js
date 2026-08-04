@@ -64,6 +64,36 @@ test('login OPTIONS preflight succeeds with the required CORS headers', async ()
   });
 });
 
+test('Vite fallback ports receive credentialed CORS headers in development', async () => {
+  await withTestServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/contact/enquiries`, {
+      method: 'OPTIONS',
+      headers: {
+        origin: 'http://localhost:5174',
+        'access-control-request-method': 'POST',
+        'access-control-request-headers': 'content-type',
+      },
+    });
+
+    assert.equal(response.status, 204);
+    assert.equal(response.headers.get('access-control-allow-origin'), 'http://localhost:5174');
+    assert.equal(response.headers.get('access-control-allow-credentials'), 'true');
+  });
+});
+
+test('untrusted non-loopback origins remain blocked', async () => {
+  await withTestServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/auth/me`, {
+      headers: {
+        origin: 'https://example.com',
+      },
+    });
+
+    assert.equal(response.status, 403);
+    assert.equal(response.headers.get('access-control-allow-origin'), null);
+  });
+});
+
 test('localhost frontend receives CORS headers on 404 responses', async () => {
   await withTestServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/not-a-route`, {

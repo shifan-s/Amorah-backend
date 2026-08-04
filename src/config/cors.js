@@ -2,9 +2,24 @@ import cors from 'cors';
 import env from './env.js';
 import ApiError from '../utils/ApiError.js';
 
+function isDevelopmentLoopbackOrigin(origin) {
+  if (env.nodeEnv === 'production') {
+    return false;
+  }
+
+  try {
+    const url = new URL(origin);
+    const isLoopbackHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+
+    return isLoopbackHost && (url.protocol === 'http:' || url.protocol === 'https:');
+  } catch {
+    return false;
+  }
+}
+
 export const corsOptions = {
   origin(origin, callback) {
-    if (!origin || env.allowedOrigins.includes(origin)) {
+    if (!origin || env.allowedOrigins.includes(origin) || isDevelopmentLoopbackOrigin(origin)) {
       callback(null, true);
       return;
     }
