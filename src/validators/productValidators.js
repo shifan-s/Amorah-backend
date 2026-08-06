@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const hexPattern = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+const skuPattern = /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
 const allowedProductFields = [
   'name',
   'slug',
@@ -176,10 +177,13 @@ const productBodyValidators = [
     .isArray({ min: 1 })
     .withMessage('At least one colour variant is required'),
   body('variants.*.sku')
-    .optional({ values: 'undefined' })
+    .optional({ values: 'falsy' })
     .trim()
-    .notEmpty()
-    .withMessage('Variant SKU is required'),
+    .toUpperCase()
+    .isLength({ max: 80 })
+    .withMessage('Variant SKU must be at most 80 characters')
+    .matches(skuPattern)
+    .withMessage('Variant SKU may contain only letters, numbers and hyphens'),
   body('variants.*.colourName')
     .optional({ values: 'undefined' })
     .trim()

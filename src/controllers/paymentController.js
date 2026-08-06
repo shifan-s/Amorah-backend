@@ -11,6 +11,8 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
   res.status(201).json({
     success: true,
     message: 'Secure payment order created successfully',
+    keyId: payment.keyId,
+    order: payment.order,
     data: {
       payment,
     },

@@ -11,7 +11,7 @@ function hasHtml(value = '') {
 
 export const checkoutPreviewValidator = [
   body().custom((value) => {
-    const allowedFields = ['shippingAddressId', 'billingSameAsShipping', 'billingAddressId', 'customerNotes'];
+    const allowedFields = ['items', 'checkoutMode', 'shippingAddressId', 'billingSameAsShipping', 'billingAddressId', 'customerNotes'];
     const unknownField = Object.keys(value || {}).find((field) => !allowedFields.includes(field));
 
     if (unknownField) {
@@ -20,6 +20,12 @@ export const checkoutPreviewValidator = [
 
     return true;
   }),
+  body('checkoutMode').optional().isIn(['cart', 'buyNow']).withMessage('Checkout mode is invalid'),
+  body('items').optional().isArray({ min: 1, max: 1 }).withMessage('Buy Now requires one item'),
+  body('items.*.productId').optional().custom(isObjectId).withMessage('Product ID is invalid'),
+  body('items.*.variantId').optional().custom(isObjectId).withMessage('Variant ID is invalid'),
+  body('items.*.sizeId').optional().custom(isObjectId).withMessage('Size ID is invalid'),
+  body('items.*.quantity').optional().isInt({ min: 1, max: 20 }).withMessage('Quantity must be between 1 and 20').toInt(),
   body('shippingAddressId').custom(isObjectId).withMessage('Shipping address is required'),
   body('billingSameAsShipping').isBoolean().withMessage('Billing preference is required').toBoolean(),
   body('billingAddressId').custom((value, { req }) => {

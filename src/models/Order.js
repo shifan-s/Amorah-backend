@@ -209,6 +209,12 @@ const orderSchema = new mongoose.Schema(
       trim: true,
       maxlength: [120, 'Checkout idempotency key is too long'],
     },
+    checkoutSource: {
+      type: String,
+      enum: ['cart', 'buy_now'],
+      default: 'cart',
+      required: true,
+    },
     items: {
       type: [orderItemSchema],
       required: true,

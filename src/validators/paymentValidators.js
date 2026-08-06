@@ -22,7 +22,8 @@ function rejectUnknown(allowedFields) {
 }
 
 export const createRazorpayOrderValidator = [
-  rejectUnknown(['items', 'shippingAddressId', 'billingSameAsShipping', 'billingAddressId', 'customerNotes', 'idempotencyKey']),
+  rejectUnknown(['items', 'checkoutMode', 'shippingAddressId', 'billingSameAsShipping', 'billingAddressId', 'customerNotes', 'idempotencyKey']),
+  body('checkoutMode').optional().isIn(['cart', 'buyNow']).withMessage('Checkout mode is invalid'),
   body('items').isArray({ min: 1, max: 50 }).withMessage('Cart items are required'),
   body('items.*').custom((item) => {
     const allowed = ['productId', 'variantId', 'sizeId', 'quantity'];

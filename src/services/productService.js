@@ -4,6 +4,7 @@ import Category from '../models/Category.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import ApiError from '../utils/ApiError.js';
+import { generateUniqueProductSku } from '../utils/productSku.js';
 import { deleteImage } from './uploadService.js';
 
 const safeProductFields = [
@@ -162,15 +163,13 @@ function validateVariants(variants) {
   const colours = new Set();
 
   variants.forEach((variant, variantIndex) => {
-    if (!variant.sku) {
-      throw new ApiError(400, `Variant ${variantIndex + 1} requires a SKU`, []);
-    }
-
-    if (skus.has(variant.sku)) {
+    if (variant.sku && skus.has(variant.sku)) {
       throw new ApiError(400, 'Variant SKU values must be unique', []);
     }
 
-    skus.add(variant.sku);
+    if (variant.sku) {
+      skus.add(variant.sku);
+    }
 
     const colourKey = variant.colourName.toLowerCase();
 
@@ -216,6 +215,31 @@ function validateVariants(variants) {
       }
     });
   });
+}
+
+async function assignMissingVariantSkus(variants, product, productId) {
+  const reservedSkus = new Set(variants.map((variant) => variant.sku).filter(Boolean));
+
+  for (const variant of variants) {
+    if (variant.sku) {
+      continue;
+    }
+
+    variant.sku = await generateUniqueProductSku({
+      productName: product.name,
+      productType: product.productType,
+      skuPrefix: product.skuPrefix,
+      colourName: variant.colourName,
+      reservedSkus,
+      skuExists: async (candidate) => {
+        const query = { 'variants.sku': candidate };
+        if (productId) {
+          query._id = { $ne: productId };
+        }
+        return Boolean(await Product.exists(query));
+      },
+    });
+  }
 }
 
 async function ensureSkuAvailable(variants, productId) {
@@ -645,6 +669,7 @@ export async function createProduct(payload, adminUserId) {
 
   validatePricing(productPayload.regularPrice, productPayload.salePrice);
   await validateProductCategories(productPayload.mainCategory, productPayload.subcategory);
+  await assignMissingVariantSkus(productPayload.variants, productPayload);
   validateVariants(productPayload.variants);
   await ensureSlugAvailable(productPayload.slug);
   await ensureSkuAvailable(productPayload.variants);
@@ -673,6 +698,7 @@ export async function updateProduct(productId, payload, adminUserId) {
 
   await validateProductCategories(product.mainCategory, product.subcategory);
   validatePricing(product.regularPrice, product.salePrice);
+  await assignMissingVariantSkus(product.variants, product, product._id);
   validateVariants(product.variants);
   await ensureSlugAvailable(product.slug, product._id);
   await ensureSkuAvailable(product.variants, product._id);

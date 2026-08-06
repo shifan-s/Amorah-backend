@@ -15,7 +15,7 @@ import {
   resolveCheckoutAddress,
   sanitizeCustomerNotes,
   validateClientCartSelection,
-  validateCheckoutCart,
+  validateCheckoutSelection,
 } from './checkoutService.js';
 
 function idString(value) {
@@ -134,6 +134,13 @@ function buildPaymentConfig(order, user, selectedAddress) {
   };
 
   return {
+    keyId: env.razorpayKeyId,
+    order: {
+      id: order.razorpay.orderId,
+      amount: amountToPaise(order.total),
+      currency: order.currency,
+      receipt: order.orderNumber,
+    },
     orderNumber: order.orderNumber,
     orderId: order.razorpay.orderId,
     razorpayOrderId: order.razorpay.orderId,
@@ -152,8 +159,8 @@ function buildPaymentConfig(order, user, selectedAddress) {
 }
 
 async function createInternalOrder(user, payload) {
-  const { cart, items } = await validateCheckoutCart(user.id);
-  validateClientCartSelection(payload.items, cart.items);
+  const { cart, items } = await validateCheckoutSelection(user.id, payload);
+  if (payload.checkoutMode !== 'buyNow') validateClientCartSelection(payload.items, cart.items);
   const { shippingAddress, billingAddress } = resolveCheckoutAddress(user, payload);
   const customerNotes = sanitizeCustomerNotes(payload.customerNotes);
   const summary = calculateCheckoutSummary(items);
@@ -163,6 +170,7 @@ async function createInternalOrder(user, payload) {
   return Order.create({
     orderNumber,
     customer: user.id,
+    checkoutSource: payload.checkoutMode === 'buyNow' ? 'buy_now' : 'cart',
     checkoutIdempotencyKey: payload.idempotencyKey,
     items: items.map(orderItemPayload),
     shippingAddress,
@@ -201,10 +209,22 @@ async function getExistingIdempotentOrder(userId, idempotencyKey) {
   return Order.findOne({ customer: userId, checkoutIdempotencyKey: idempotencyKey });
 }
 
-export async function createRazorpayPaymentOrder(user, payload) {
-  if (!isRazorpayConfigured()) {
-    throw new ApiError(503, 'Razorpay payment order creation is not configured', []);
+export function validateRazorpayPaymentConfiguration() {
+  if (!env.razorpayKeyId) {
+    throw new ApiError(500, 'Razorpay Key ID is not configured on the server', []);
   }
+
+  if (!env.razorpayKeySecret) {
+    throw new ApiError(500, 'Razorpay Key Secret is not configured on the server', []);
+  }
+
+  if (!/^rzp_(test|live)_[A-Za-z0-9]+$/.test(env.razorpayKeyId)) {
+    throw new ApiError(500, 'Razorpay Key ID has an invalid format on the server', []);
+  }
+}
+
+export async function createRazorpayPaymentOrder(user, payload) {
+  validateRazorpayPaymentConfiguration();
 
   let order = await getExistingIdempotentOrder(user.id, payload.idempotencyKey);
 
@@ -423,7 +443,9 @@ async function finalizePaidOrderWithSession({
   order.paymentReviewReason = '';
   appendTimeline(order, 'confirmed', 'Payment verified and order confirmed');
 
-  await processPurchasedCartItems(order, session);
+  if (order.checkoutSource !== 'buy_now') {
+    await processPurchasedCartItems(order, session);
+  }
 
   order.cartCleared = true;
   order.cartClearedAt = now();

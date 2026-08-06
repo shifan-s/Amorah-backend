@@ -181,6 +181,38 @@ async function loadProductsForCart(items) {
   return new Map(products.map((product) => [product._id.toString(), product]));
 }
 
+export async function validateDirectSelection(clientItems) {
+  if (!Array.isArray(clientItems) || clientItems.length !== 1) {
+    throw new ApiError(400, 'Buy Now requires exactly one item', []);
+  }
+
+  const requested = clientItems[0];
+  const product = await Product.findById(requested.productId).populate('mainCategory', 'isActive name slug level');
+  const cartLikeItem = {
+    product: requested.productId,
+    variantId: requested.variantId,
+    sizeId: requested.sizeId,
+    quantity: Number(requested.quantity),
+  };
+
+  if (!product || product.status !== 'active' || product.mainCategory?.isActive === false) {
+    throw new ApiError(400, 'Product is no longer available', []);
+  }
+  const variant = findVariant(product, requested.variantId);
+  const size = findSize(variant, requested.sizeId);
+  if (!variant?.active || !size?.active || size.stock < cartLikeItem.quantity) {
+    throw new ApiError(400, 'The selected colour, size or quantity is no longer available', []);
+  }
+
+  return { cart: null, items: [buildOrderItemSnapshot(cartLikeItem, product, variant, size)] };
+}
+
+export async function validateCheckoutSelection(userId, payload) {
+  return payload.checkoutMode === 'buyNow'
+    ? validateDirectSelection(payload.items)
+    : validateCheckoutCart(userId);
+}
+
 export async function validateCheckoutCart(userId) {
   const cart = await Cart.findOne({ user: userId });
 
@@ -262,7 +294,7 @@ export function validateClientCartSelection(clientItems, cartItems) {
 }
 
 export async function buildCheckoutPreview(user, payload) {
-  const { items } = await validateCheckoutCart(user.id);
+  const { items } = await validateCheckoutSelection(user.id, payload);
   const { shippingAddress, billingAddress } = resolveCheckoutAddress(user, payload);
   const customerNotes = sanitizeCustomerNotes(payload.customerNotes);
   const summary = calculateCheckoutSummary(items);

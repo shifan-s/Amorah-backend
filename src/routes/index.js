@@ -41,6 +41,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/products', productRoutes);
 router.use('/users/me/addresses', addressRoutes);
+router.use('/addresses', addressRoutes);
 router.use('/users', userRoutes);
 
 export default router;
