@@ -22,7 +22,8 @@ function sameId(left, right) {
   return idString(left) === idString(right);
 }
 
-function currentPrice(product) {
+function currentPrice(product, variant) {
+  if (variant?.price !== null && variant?.price !== undefined) return variant.price;
   return product.salePrice !== null && product.salePrice !== undefined && product.salePrice < product.regularPrice
     ? product.salePrice
     : product.regularPrice;
@@ -91,7 +92,7 @@ export async function validateCartSelection({ productId, variantId, sizeId, quan
     product,
     variant,
     size,
-    unitPrice: currentPrice(product),
+    unitPrice: currentPrice(product, variant),
   };
 }
 
@@ -149,7 +150,7 @@ export async function buildCartResponse(cart) {
     const availability = getAvailability(item, product);
     const variant = availability.variant || (product ? findVariant(product, item.variantId) : null);
     const size = availability.size || findSize(variant, item.sizeId);
-    const unitPrice = product ? currentPrice(product) : 0;
+    const unitPrice = product ? currentPrice(product, variant) : 0;
     const lineTotal = availability.available ? unitPrice * item.quantity : 0;
 
     items.push({

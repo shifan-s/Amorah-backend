@@ -22,7 +22,8 @@ function sameId(left, right) {
   return idString(left) === idString(right);
 }
 
-function currentPrice(product) {
+function currentPrice(product, variant) {
+  if (variant?.price !== null && variant?.price !== undefined) return variant.price;
   return product.salePrice !== null && product.salePrice !== undefined && product.salePrice < product.regularPrice
     ? product.salePrice
     : product.regularPrice;
@@ -57,7 +58,7 @@ function buildUnavailableError(item, message) {
 }
 
 function buildOrderItemSnapshot(item, product, variant, size) {
-  const unitPrice = currentPrice(product);
+  const unitPrice = currentPrice(product, variant);
   const quantity = Number(item.quantity) || 1;
 
   return {

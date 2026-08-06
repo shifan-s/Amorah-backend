@@ -29,8 +29,8 @@ const allowedProductFields = [
   'metaTitle',
   'metaDescription',
 ];
-const allowedVariantFields = ['_id', 'id', 'sku', 'colourName', 'colourHex', 'images', 'sizes', 'active'];
-const allowedImageFields = ['_id', 'id', 'url', 'publicId', 'alt', 'sortOrder', 'isPrimary'];
+const allowedVariantFields = ['_id', 'id', 'sku', 'colourName', 'colourHex', 'price', 'compareAtPrice', 'images', 'sizes', 'active'];
+const allowedImageFields = ['_id', 'id', 'pose', 'url', 'publicId', 'alt', 'sortOrder', 'isPrimary'];
 const allowedSizeFields = ['_id', 'id', 'name', 'stock', 'active'];
 
 function isObjectId(value) {
@@ -190,6 +190,12 @@ const productBodyValidators = [
     .trim()
     .matches(hexPattern)
     .withMessage('Colour hex must be a valid hex colour'),
+  body('variants.*.price').isFloat({ min: 0 }).withMessage('Variant price cannot be negative').toFloat(),
+  body('variants.*.compareAtPrice')
+    .optional({ nullable: true, values: 'undefined' })
+    .custom((value) => value === null || value === '' || Number(value) >= 0)
+    .withMessage('Compare-at price cannot be negative')
+    .customSanitizer((value) => (value === '' ? null : value)),
   body('variants.*.active')
     .optional({ values: 'undefined' })
     .isBoolean()
@@ -199,6 +205,9 @@ const productBodyValidators = [
     .optional({ values: 'undefined' })
     .isArray()
     .withMessage('Variant images must be an array'),
+  body('variants.*.images.*.pose')
+    .isIn(['front', 'side', 'back'])
+    .withMessage('Image pose must be front, side or back'),
   body('variants.*.images.*.url')
     .optional({ values: 'undefined' })
     .trim()

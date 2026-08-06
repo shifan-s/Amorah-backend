@@ -98,9 +98,11 @@ function idString(value) {
 }
 
 function normalizeImage(image, index) {
+  const legacyPose = ['front', 'side', 'back'][index];
   return {
     ...(image._id || image.id ? { _id: image._id || image.id } : {}),
     url: normalizeText(image.url),
+    pose: normalizeText(image.pose || legacyPose).toLowerCase(),
     publicId: normalizeText(image.publicId),
     alt: normalizeText(image.alt),
     sortOrder: Number.isInteger(image.sortOrder) ? image.sortOrder : index,
@@ -143,6 +145,8 @@ function normalizeVariant(variant) {
     sku: normalizeSku(variant.sku),
     colourName: normalizeText(variant.colourName),
     colourHex: normalizeOptionalText(variant.colourHex),
+    price: Number(variant.price),
+    compareAtPrice: variant.compareAtPrice === '' || variant.compareAtPrice === null || variant.compareAtPrice === undefined ? null : Number(variant.compareAtPrice),
     images: normalizeImages(variant.images || []),
     sizes: (variant.sizes || []).map(normalizeSize),
     active: variant.active === undefined ? true : Boolean(variant.active),
@@ -168,13 +172,29 @@ function validateVariants(variants) {
 
     skus.add(variant.sku);
 
-    const colourKey = `${variant.colourName}|${variant.colourHex || ''}`.toLowerCase();
+    const colourKey = variant.colourName.toLowerCase();
 
     if (colours.has(colourKey)) {
       throw new ApiError(400, 'Colour variants must not duplicate', []);
     }
 
     colours.add(colourKey);
+
+    if (!variant.colourName) {
+      throw new ApiError(400, `Variant ${variantIndex + 1} requires a colour name`, []);
+    }
+
+    if (!Number.isFinite(variant.price) || variant.price < 0) {
+      throw new ApiError(400, 'Variant price cannot be negative', []);
+    }
+    if (variant.compareAtPrice !== null && (!Number.isFinite(variant.compareAtPrice) || variant.compareAtPrice <= variant.price)) {
+      throw new ApiError(400, 'Compare-at price must be greater than the variant price', []);
+    }
+
+    const poses = variant.images.map((image) => image.pose);
+    if (variant.images.length !== 3 || !['front', 'side', 'back'].every((pose) => poses.includes(pose)) || new Set(poses).size !== 3) {
+      throw new ApiError(400, 'Each color variant requires exactly one front, side and back image', []);
+    }
 
     const sizeNames = new Set();
 
@@ -291,8 +311,9 @@ function validateActiveProduct(product) {
   }
 
   activeVariants.forEach((variant) => {
-    if (!variant.images.length) {
-      errors.push(`${variant.colourName} requires at least one image`);
+    const poses = variant.images.map((image) => image.pose);
+    if (variant.images.length !== 3 || !['front', 'side', 'back'].every((pose) => poses.includes(pose))) {
+      errors.push(`${variant.colourName} requires front, side and back images`);
     }
 
     if (!variant.sizes.some((size) => size.active)) {

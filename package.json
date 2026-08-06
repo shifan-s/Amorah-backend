@@ -5,6 +5,7 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
+    "migrate:variant-poses": "node scripts/migrateVariantPoses.js",
     "admin:create": "node scripts/createAdmin.js",
     "seed:admin": "node scripts/createAdmin.js",
     "catalogue:setup-client": "node scripts/setupClientCatalogue.js",

@@ -22,6 +22,11 @@ function normalizeLower(value) {
 
 const variantImageSchema = new mongoose.Schema(
   {
+    pose: {
+      type: String,
+      required: [true, 'Image pose is required'],
+      enum: ['front', 'side', 'back'],
+    },
     url: {
       type: String,
       required: [true, 'Image URL is required'],
@@ -104,6 +109,16 @@ const variantSchema = new mongoose.Schema(
         },
         message: 'Colour hex must be a valid hex colour',
       },
+    },
+    price: {
+      type: Number,
+      min: [0, 'Variant price cannot be negative'],
+      default: null,
+    },
+    compareAtPrice: {
+      type: Number,
+      min: [0, 'Compare-at price cannot be negative'],
+      default: null,
     },
     images: {
       type: [variantImageSchema],
@@ -399,7 +414,7 @@ function normalizeVariantImages(images) {
   return nextImages;
 }
 
-function transformVariant(variant, publicOnly) {
+function transformVariant(variant, publicOnly, product) {
   if (publicOnly && !variant.active) {
     return null;
   }
@@ -416,13 +431,16 @@ function transformVariant(variant, publicOnly) {
     sku: variant.sku,
     colourName: variant.colourName,
     colourHex: variant.colourHex,
-    images: normalizeVariantImages(variant.images).map((image) => ({
+    price: variant.price ?? calculateCurrentPrice(product),
+    compareAtPrice: variant.compareAtPrice ?? (product.salePrice !== null && product.salePrice !== undefined ? product.regularPrice : null),
+    images: normalizeVariantImages(variant.images).map((image, imageIndex) => ({
       id: image._id.toString(),
       url: image.url,
       publicId: image.publicId,
       alt: image.alt,
       sortOrder: image.sortOrder,
-      isPrimary: image.isPrimary,
+      isPrimary: (image.pose || ['front', 'side', 'back'][imageIndex]) === 'front',
+      pose: image.pose || ['front', 'side', 'back'][imageIndex] || '',
     })),
     sizes,
     active: variant.active,
@@ -470,7 +488,7 @@ function availableSizes(variants) {
 }
 
 function toProductObject(product, { publicOnly = false } = {}) {
-  const variants = product.variants.map((variant) => transformVariant(variant, publicOnly)).filter(Boolean);
+  const variants = product.variants.map((variant) => transformVariant(variant, publicOnly, product)).filter(Boolean);
   const totalStock = calculateStock(variants);
   const response = {
     id: product._id.toString(),
