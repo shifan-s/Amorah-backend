@@ -190,9 +190,8 @@ function validateVariants(variants) {
       throw new ApiError(400, 'Compare-at price must be greater than the variant price', []);
     }
 
-    const poses = variant.images.map((image) => image.pose);
-    if (variant.images.length !== 3 || !['front', 'side', 'back'].every((pose) => poses.includes(pose)) || new Set(poses).size !== 3) {
-      throw new ApiError(400, 'Each color variant requires exactly one front, side and back image', []);
+    if (variant.images.length > 3) {
+      throw new ApiError(400, 'Each colour variant can contain at most three images', []);
     }
 
     const sizeNames = new Set();
@@ -335,9 +334,8 @@ function validateActiveProduct(product) {
   }
 
   activeVariants.forEach((variant) => {
-    const poses = variant.images.map((image) => image.pose);
-    if (variant.images.length !== 3 || !['front', 'side', 'back'].every((pose) => poses.includes(pose))) {
-      errors.push(`${variant.colourName} requires front, side and back images`);
+    if (variant.images.length < 1 || variant.images.length > 3) {
+      errors.push(`${variant.colourName} requires between one and three images`);
     }
 
     if (!variant.sizes.some((size) => size.active)) {

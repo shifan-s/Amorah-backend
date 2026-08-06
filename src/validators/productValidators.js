@@ -207,8 +207,8 @@ const productBodyValidators = [
     .toBoolean(),
   body('variants.*.images')
     .optional({ values: 'undefined' })
-    .isArray()
-    .withMessage('Variant images must be an array'),
+    .isArray({ max: 3 })
+    .withMessage('Variant images must be an array containing no more than three images'),
   body('variants.*.images.*.pose')
     .isIn(['front', 'side', 'back'])
     .withMessage('Image pose must be front, side or back'),
