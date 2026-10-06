@@ -15,8 +15,7 @@ test('formats readable Amorah order numbers', () => {
   assert.equal(formatOrderNumber(2026, 42), 'AMR-2026-000042');
 });
 
-test('calculates paid shipping below the free shipping threshold', () => {
-  env.checkoutFreeShippingThreshold = 1499;
+test('uses the configured legacy product shipping charge when no amount is set', () => {
   env.checkoutShippingCharge = 99;
 
   const summary = calculateCheckoutSummary([{ quantity: 1, lineTotal: 1299 }]);
@@ -52,16 +51,15 @@ test('charges an additional 30 rupees for a zero-shipping product in the cart', 
   assert.equal(summary.shippingCharge, 110);
 });
 
-test('calculates free shipping at the threshold and keeps tax zero', () => {
+test('charges the product shipping amount at the former free-shipping threshold', () => {
   env.checkoutFreeShippingThreshold = 1499;
-  env.checkoutShippingCharge = 99;
 
-  const summary = calculateCheckoutSummary([{ quantity: 2, lineTotal: 1500 }]);
+  const summary = calculateCheckoutSummary([{ quantity: 1, lineTotal: 1499, shippingChargeAmount: 80 }]);
 
-  assert.equal(summary.itemCount, 2);
-  assert.equal(summary.shippingCharge, 0);
+  assert.equal(summary.itemCount, 1);
+  assert.equal(summary.shippingCharge, 80);
   assert.equal(summary.tax, 0);
-  assert.equal(summary.total, 1500);
+  assert.equal(summary.total, 1579);
   assert.equal(summary.currency, 'INR');
 });
 

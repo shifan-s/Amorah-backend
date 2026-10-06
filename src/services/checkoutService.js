@@ -162,7 +162,7 @@ export function resolveCheckoutAddress(user, payload) {
 
 export function calculateCheckoutSummary(items) {
   const subtotal = items.reduce((total, item) => total + item.lineTotal, 0);
-  const shippingCharge = calculateShippingCharge(items, subtotal, env.checkoutFreeShippingThreshold);
+  const shippingCharge = calculateShippingCharge(items);
   const tax = 0;
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
 

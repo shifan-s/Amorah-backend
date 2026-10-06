@@ -12,11 +12,11 @@ export function getProductShippingChargeAmount(product) {
   return product?.shippingChargeApplies === false ? 0 : env.checkoutShippingCharge;
 }
 
-export function calculateShippingCharge(items, subtotal, freeShippingThreshold) {
+export function calculateShippingCharge(items) {
   const shippableItems = items.filter((item) => item.available !== false);
   const itemCount = shippableItems.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
 
-  if (itemCount === 0 || subtotal <= 0 || subtotal >= freeShippingThreshold) {
+  if (itemCount === 0) {
     return 0;
   }
 

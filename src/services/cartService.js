@@ -184,7 +184,7 @@ export async function buildCartResponse(cart) {
   }
 
   const subtotal = items.reduce((total, item) => total + (item.available ? item.lineTotal : 0), 0);
-  const shippingCharge = calculateShippingCharge(items, subtotal, env.checkoutFreeShippingThreshold);
+  const shippingCharge = calculateShippingCharge(items);
   const itemCount = items.reduce((total, item) => total + (item.available ? item.quantity : 0), 0);
   const amountRemainingForFreeShipping = Math.max(0, env.checkoutFreeShippingThreshold - subtotal);
 

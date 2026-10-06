@@ -58,5 +58,6 @@ test('checkout summary multiplies unit price by selected quantity totals', () =>
 
   assert.equal(summary.itemCount, 3);
   assert.equal(summary.subtotal, 4497);
-  assert.equal(summary.total, 4497);
+  assert.equal(summary.shippingCharge, 159);
+  assert.equal(summary.total, 4656);
 });
