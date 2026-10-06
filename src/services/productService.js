@@ -21,6 +21,7 @@ const safeProductFields = [
   'shortDescription',
   'regularPrice',
   'salePrice',
+  'shippingChargeApplies',
   'variants',
   'status',
   'featured',
@@ -142,7 +143,7 @@ function normalizeVariant(variant) {
     sku: normalizeSku(variant.sku),
     colourName: normalizeText(variant.colourName),
     colourHex: normalizeOptionalText(variant.colourHex),
-    price: Number(variant.price),
+    price: variant.price === '' || variant.price === null || variant.price === undefined ? null : Number(variant.price),
     compareAtPrice: variant.compareAtPrice === '' || variant.compareAtPrice === null || variant.compareAtPrice === undefined ? null : Number(variant.compareAtPrice),
     images: normalizeImages(variant.images || []),
     sizes: (variant.sizes || []).map(normalizeSize),
@@ -179,8 +180,11 @@ function validateVariants(variants) {
       throw new ApiError(400, `Variant ${variantIndex + 1} requires a colour name`, []);
     }
 
-    if (!Number.isFinite(variant.price) || variant.price < 0) {
+    if (variant.price !== null && (!Number.isFinite(variant.price) || variant.price < 0)) {
       throw new ApiError(400, 'Variant price cannot be negative', []);
+    }
+    if (variant.compareAtPrice !== null && variant.price === null) {
+      throw new ApiError(400, 'Compare-at price requires a variant price override', []);
     }
     if (variant.compareAtPrice !== null && (!Number.isFinite(variant.compareAtPrice) || variant.compareAtPrice <= variant.price)) {
       throw new ApiError(400, 'Compare-at price must be greater than the variant price', []);
@@ -361,6 +365,7 @@ function buildProductPayload(payload) {
     shortDescription: normalizeText(payload.shortDescription),
     regularPrice: Number(payload.regularPrice),
     salePrice: payload.salePrice === undefined || payload.salePrice === null || payload.salePrice === '' ? null : Number(payload.salePrice),
+    shippingChargeApplies: payload.shippingChargeApplies === undefined ? true : Boolean(payload.shippingChargeApplies),
     variants: (payload.variants || []).map(normalizeVariant),
     status: payload.status || 'draft',
     featured: Boolean(payload.featured),
@@ -417,7 +422,7 @@ function applyProductUpdates(product, payload) {
       return;
     }
 
-    if (['featured', 'newArrival', 'bestSeller'].includes(field)) {
+    if (['shippingChargeApplies', 'featured', 'newArrival', 'bestSeller'].includes(field)) {
       product[field] = Boolean(payload[field]);
       return;
     }

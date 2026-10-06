@@ -18,6 +18,7 @@ const allowedProductFields = [
   'shortDescription',
   'regularPrice',
   'salePrice',
+  'shippingChargeApplies',
   'variants',
   'status',
   'featured',
@@ -163,6 +164,7 @@ const productBodyValidators = [
     .withMessage('Sale price cannot be negative')
     .customSanitizer((value) => (value === '' ? null : value))
     .toFloat(),
+  optionalBoolean('shippingChargeApplies'),
   body('variants')
     .optional({ values: 'undefined' })
     .isArray({ min: 1 })
@@ -185,7 +187,11 @@ const productBodyValidators = [
     .trim()
     .matches(hexPattern)
     .withMessage('Colour hex must be a valid hex colour'),
-  body('variants.*.price').isFloat({ min: 0 }).withMessage('Variant price cannot be negative').toFloat(),
+  body('variants.*.price')
+    .optional({ nullable: true, values: 'undefined' })
+    .isFloat({ min: 0 })
+    .withMessage('Variant price cannot be negative')
+    .toFloat(),
   body('variants.*.compareAtPrice')
     .optional({ nullable: true, values: 'undefined' })
     .custom((value) => value === null || value === '' || Number(value) >= 0)

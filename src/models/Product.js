@@ -236,6 +236,10 @@ const productSchema = new mongoose.Schema(
         message: 'Sale price must be less than regular price',
       },
     },
+    shippingChargeApplies: {
+      type: Boolean,
+      default: true,
+    },
     variants: {
       type: [variantSchema],
       required: [true, 'At least one colour variant is required'],
@@ -407,8 +411,8 @@ function transformVariant(variant, publicOnly, product) {
     sku: variant.sku,
     colourName: variant.colourName,
     colourHex: variant.colourHex,
-    price: variant.price ?? calculateCurrentPrice(product),
-    compareAtPrice: variant.compareAtPrice ?? (product.salePrice !== null && product.salePrice !== undefined ? product.regularPrice : null),
+    price: publicOnly ? variant.price ?? calculateCurrentPrice(product) : variant.price,
+    compareAtPrice: publicOnly ? variant.compareAtPrice ?? (product.salePrice !== null && product.salePrice !== undefined ? product.regularPrice : null) : variant.compareAtPrice,
     images: normalizeVariantImages(variant.images).map((image, imageIndex) => ({
       id: image._id.toString(),
       url: image.url,
@@ -480,6 +484,7 @@ function toProductObject(product, { publicOnly = false } = {}) {
     shortDescription: product.shortDescription,
     regularPrice: product.regularPrice,
     salePrice: product.salePrice,
+    shippingChargeApplies: product.shippingChargeApplies !== false,
     currentPrice: calculateCurrentPrice(product),
     discountPercentage: calculateDiscountPercentage(product),
     isOnSale: product.salePrice !== null && product.salePrice !== undefined,

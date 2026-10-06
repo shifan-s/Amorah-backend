@@ -75,6 +75,7 @@ function buildOrderItemSnapshot(item, product, variant, size) {
     quantity,
     unitPrice,
     lineTotal: unitPrice * quantity,
+    shippingChargeApplies: product.shippingChargeApplies !== false,
   };
 }
 
@@ -93,6 +94,7 @@ function publicItemSnapshot(item) {
     quantity: item.quantity,
     unitPrice: item.unitPrice,
     lineTotal: item.lineTotal,
+    shippingChargeApplies: item.shippingChargeApplies !== false,
   };
 }
 
@@ -159,8 +161,9 @@ export function resolveCheckoutAddress(user, payload) {
 
 export function calculateCheckoutSummary(items) {
   const subtotal = items.reduce((total, item) => total + item.lineTotal, 0);
+  const hasShippingCharge = items.some((item) => item.shippingChargeApplies !== false);
   const shippingCharge =
-    subtotal > 0 && subtotal < env.checkoutFreeShippingThreshold ? env.checkoutShippingCharge : 0;
+    hasShippingCharge && subtotal > 0 && subtotal < env.checkoutFreeShippingThreshold ? env.checkoutShippingCharge : 0;
   const tax = 0;
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
 

@@ -176,6 +176,7 @@ export async function buildCartResponse(cart) {
       availableStock: size?.stock || 0,
       regularPrice: product?.regularPrice || 0,
       salePrice: product?.salePrice ?? null,
+      shippingChargeApplies: product?.shippingChargeApplies !== false,
       unitPrice,
       lineTotal,
       available: availability.available,
@@ -184,7 +185,8 @@ export async function buildCartResponse(cart) {
   }
 
   const subtotal = items.reduce((total, item) => total + (item.available ? item.lineTotal : 0), 0);
-  const shippingCharge = subtotal > 0 && subtotal < freeShippingThreshold ? standardShippingCharge : 0;
+  const hasShippingCharge = items.some((item) => item.available && item.shippingChargeApplies !== false);
+  const shippingCharge = hasShippingCharge && subtotal > 0 && subtotal < freeShippingThreshold ? standardShippingCharge : 0;
   const itemCount = items.reduce((total, item) => total + (item.available ? item.quantity : 0), 0);
   const amountRemainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
 
