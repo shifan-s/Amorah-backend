@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { getProductShippingChargeAmount } from '../utils/shipping.js';
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const hexPattern = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -235,6 +236,11 @@ const productSchema = new mongoose.Schema(
         },
         message: 'Sale price must be less than regular price',
       },
+    },
+    shippingChargeAmount: {
+      type: Number,
+      min: [0, 'Shipping charge cannot be negative'],
+      default: null,
     },
     shippingChargeApplies: {
       type: Boolean,
@@ -484,6 +490,7 @@ function toProductObject(product, { publicOnly = false } = {}) {
     shortDescription: product.shortDescription,
     regularPrice: product.regularPrice,
     salePrice: product.salePrice,
+    shippingChargeAmount: getProductShippingChargeAmount(product),
     shippingChargeApplies: product.shippingChargeApplies !== false,
     currentPrice: calculateCurrentPrice(product),
     discountPercentage: calculateDiscountPercentage(product),

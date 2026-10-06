@@ -68,6 +68,7 @@ const orderItemSchema = new mongoose.Schema(
     quantity: { type: Number, required: true, min: 1 },
     unitPrice: { type: Number, required: true, min: 0 },
     lineTotal: { type: Number, required: true, min: 0 },
+    shippingChargeAmount: { type: Number, min: 0, default: 0 },
     shippingChargeApplies: { type: Boolean, default: true },
   },
   { _id: false },

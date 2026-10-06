@@ -28,6 +28,30 @@ test('calculates paid shipping below the free shipping threshold', () => {
   assert.equal(summary.paymentMethod, undefined);
 });
 
+test('uses the highest product shipping amount plus 30 rupees per additional piece', () => {
+  env.checkoutFreeShippingThreshold = 1499;
+
+  const summary = calculateCheckoutSummary([
+    { quantity: 1, lineTotal: 500, shippingChargeAmount: 80 },
+    { quantity: 1, lineTotal: 500, shippingChargeAmount: 50 },
+  ]);
+
+  assert.equal(summary.shippingCharge, 110);
+  assert.equal(summary.total, 1110);
+
+  const threePieces = calculateCheckoutSummary([{ quantity: 3, lineTotal: 300, shippingChargeAmount: 80 }]);
+  assert.equal(threePieces.shippingCharge, 140);
+});
+
+test('charges an additional 30 rupees for a zero-shipping product in the cart', () => {
+  const summary = calculateCheckoutSummary([
+    { quantity: 1, lineTotal: 500, shippingChargeAmount: 80 },
+    { quantity: 1, lineTotal: 500, shippingChargeAmount: 0 },
+  ]);
+
+  assert.equal(summary.shippingCharge, 110);
+});
+
 test('calculates free shipping at the threshold and keeps tax zero', () => {
   env.checkoutFreeShippingThreshold = 1499;
   env.checkoutShippingCharge = 99;

@@ -2,9 +2,8 @@ import mongoose from 'mongoose';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
 import ApiError from '../utils/ApiError.js';
-
-const freeShippingThreshold = 1499;
-const standardShippingCharge = 99;
+import env from '../config/env.js';
+import { calculateShippingCharge, getProductShippingChargeAmount } from '../utils/shipping.js';
 
 function idString(value) {
   if (!value) {
@@ -176,7 +175,7 @@ export async function buildCartResponse(cart) {
       availableStock: size?.stock || 0,
       regularPrice: product?.regularPrice || 0,
       salePrice: product?.salePrice ?? null,
-      shippingChargeApplies: product?.shippingChargeApplies !== false,
+      shippingChargeAmount: product ? getProductShippingChargeAmount(product) : 0,
       unitPrice,
       lineTotal,
       available: availability.available,
@@ -185,10 +184,9 @@ export async function buildCartResponse(cart) {
   }
 
   const subtotal = items.reduce((total, item) => total + (item.available ? item.lineTotal : 0), 0);
-  const hasShippingCharge = items.some((item) => item.available && item.shippingChargeApplies !== false);
-  const shippingCharge = hasShippingCharge && subtotal > 0 && subtotal < freeShippingThreshold ? standardShippingCharge : 0;
+  const shippingCharge = calculateShippingCharge(items, subtotal, env.checkoutFreeShippingThreshold);
   const itemCount = items.reduce((total, item) => total + (item.available ? item.quantity : 0), 0);
-  const amountRemainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
+  const amountRemainingForFreeShipping = Math.max(0, env.checkoutFreeShippingThreshold - subtotal);
 
   return {
     id: idString(safeCart._id || safeCart.id),
@@ -200,7 +198,7 @@ export async function buildCartResponse(cart) {
       shippingCharge,
       tax: 0,
       total: subtotal + shippingCharge,
-      freeShippingThreshold,
+      freeShippingThreshold: env.checkoutFreeShippingThreshold,
       amountRemainingForFreeShipping,
     },
   };

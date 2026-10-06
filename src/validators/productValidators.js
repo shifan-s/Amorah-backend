@@ -18,6 +18,7 @@ const allowedProductFields = [
   'shortDescription',
   'regularPrice',
   'salePrice',
+  'shippingChargeAmount',
   'shippingChargeApplies',
   'variants',
   'status',
@@ -164,6 +165,11 @@ const productBodyValidators = [
     .withMessage('Sale price cannot be negative')
     .customSanitizer((value) => (value === '' ? null : value))
     .toFloat(),
+  body('shippingChargeAmount')
+    .optional({ values: 'undefined' })
+    .isInt({ min: 0 })
+    .withMessage('Shipping charge must be a whole rupee amount of zero or more')
+    .toInt(),
   optionalBoolean('shippingChargeApplies'),
   body('variants')
     .optional({ values: 'undefined' })

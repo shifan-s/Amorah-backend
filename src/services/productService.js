@@ -5,6 +5,7 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import ApiError from '../utils/ApiError.js';
 import { generateUniqueProductSku } from '../utils/productSku.js';
+import { getProductShippingChargeAmount } from '../utils/shipping.js';
 import { deleteImage } from './uploadService.js';
 
 const safeProductFields = [
@@ -21,6 +22,7 @@ const safeProductFields = [
   'shortDescription',
   'regularPrice',
   'salePrice',
+  'shippingChargeAmount',
   'shippingChargeApplies',
   'variants',
   'status',
@@ -365,6 +367,10 @@ function buildProductPayload(payload) {
     shortDescription: normalizeText(payload.shortDescription),
     regularPrice: Number(payload.regularPrice),
     salePrice: payload.salePrice === undefined || payload.salePrice === null || payload.salePrice === '' ? null : Number(payload.salePrice),
+    shippingChargeAmount:
+      payload.shippingChargeAmount === undefined
+        ? getProductShippingChargeAmount(payload)
+        : Number(payload.shippingChargeAmount),
     shippingChargeApplies: payload.shippingChargeApplies === undefined ? true : Boolean(payload.shippingChargeApplies),
     variants: (payload.variants || []).map(normalizeVariant),
     status: payload.status || 'draft',
@@ -409,6 +415,11 @@ function applyProductUpdates(product, payload) {
 
     if (field === 'regularPrice') {
       product.regularPrice = Number(payload.regularPrice);
+      return;
+    }
+
+    if (field === 'shippingChargeAmount') {
+      product.shippingChargeAmount = Number(payload.shippingChargeAmount);
       return;
     }
 

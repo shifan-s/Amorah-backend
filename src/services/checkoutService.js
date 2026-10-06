@@ -3,6 +3,7 @@ import env from '../config/env.js';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
 import ApiError from '../utils/ApiError.js';
+import { calculateShippingCharge, getProductShippingChargeAmount } from '../utils/shipping.js';
 
 const currency = 'INR';
 
@@ -75,7 +76,7 @@ function buildOrderItemSnapshot(item, product, variant, size) {
     quantity,
     unitPrice,
     lineTotal: unitPrice * quantity,
-    shippingChargeApplies: product.shippingChargeApplies !== false,
+    shippingChargeAmount: getProductShippingChargeAmount(product),
   };
 }
 
@@ -94,7 +95,7 @@ function publicItemSnapshot(item) {
     quantity: item.quantity,
     unitPrice: item.unitPrice,
     lineTotal: item.lineTotal,
-    shippingChargeApplies: item.shippingChargeApplies !== false,
+    shippingChargeAmount: item.shippingChargeAmount,
   };
 }
 
@@ -161,9 +162,7 @@ export function resolveCheckoutAddress(user, payload) {
 
 export function calculateCheckoutSummary(items) {
   const subtotal = items.reduce((total, item) => total + item.lineTotal, 0);
-  const hasShippingCharge = items.some((item) => item.shippingChargeApplies !== false);
-  const shippingCharge =
-    hasShippingCharge && subtotal > 0 && subtotal < env.checkoutFreeShippingThreshold ? env.checkoutShippingCharge : 0;
+  const shippingCharge = calculateShippingCharge(items, subtotal, env.checkoutFreeShippingThreshold);
   const tax = 0;
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
 
