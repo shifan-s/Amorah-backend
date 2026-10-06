@@ -19,13 +19,9 @@ const safeProductFields = [
   'occasion',
   'tags',
   'shortDescription',
-  'description',
   'regularPrice',
   'salePrice',
   'variants',
-  'fabricDetails',
-  'fit',
-  'careInstructions',
   'status',
   'featured',
   'newArrival',
@@ -317,8 +313,8 @@ function validatePricing(regularPrice, salePrice) {
 function validateActiveProduct(product) {
   const errors = [];
 
-  if (!product.name || !product.shortDescription || !product.description) {
-    errors.push('Product name and descriptions are required');
+  if (!product.name || !product.shortDescription) {
+    errors.push('Product name and short description are required');
   }
 
   try {
@@ -363,13 +359,9 @@ function buildProductPayload(payload) {
     occasion: normalizeText(payload.occasion),
     tags: normalizeTags(payload.tags),
     shortDescription: normalizeText(payload.shortDescription),
-    description: normalizeText(payload.description),
     regularPrice: Number(payload.regularPrice),
     salePrice: payload.salePrice === undefined || payload.salePrice === null || payload.salePrice === '' ? null : Number(payload.salePrice),
     variants: (payload.variants || []).map(normalizeVariant),
-    fabricDetails: normalizeText(payload.fabricDetails),
-    fit: normalizeText(payload.fit),
-    careInstructions: normalizeText(payload.careInstructions),
     status: payload.status || 'draft',
     featured: Boolean(payload.featured),
     newArrival: Boolean(payload.newArrival),
@@ -395,7 +387,7 @@ function applyProductUpdates(product, payload) {
       return;
     }
 
-    if (['productType', 'style', 'fabric', 'occasion', 'fabricDetails', 'fit', 'careInstructions', 'metaTitle', 'metaDescription'].includes(field)) {
+    if (['productType', 'style', 'fabric', 'occasion', 'metaTitle', 'metaDescription'].includes(field)) {
       product[field] = normalizeText(payload[field]);
       return;
     }

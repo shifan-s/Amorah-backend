@@ -16,13 +16,9 @@ const allowedProductFields = [
   'occasion',
   'tags',
   'shortDescription',
-  'description',
   'regularPrice',
   'salePrice',
   'variants',
-  'fabricDetails',
-  'fit',
-  'careInstructions',
   'status',
   'featured',
   'newArrival',
@@ -156,11 +152,6 @@ const productBodyValidators = [
     .trim()
     .isLength({ min: 1, max: 300 })
     .withMessage('Short description is required and must be at most 300 characters'),
-  body('description')
-    .optional({ values: 'undefined' })
-    .trim()
-    .isLength({ min: 1, max: 5000 })
-    .withMessage('Description is required and must be at most 5000 characters'),
   body('regularPrice')
     .optional({ values: 'undefined' })
     .isFloat({ min: 0 })
@@ -255,12 +246,6 @@ const productBodyValidators = [
     .isBoolean()
     .withMessage('Size active must be true or false')
     .toBoolean(),
-  body(['fabricDetails', 'careInstructions'])
-    .optional({ values: 'falsy' })
-    .trim()
-    .isLength({ max: 500 })
-    .withMessage('Text field must be at most 500 characters'),
-  body('fit').optional({ values: 'falsy' }).trim().isLength({ max: 200 }).withMessage('Fit must be at most 200 characters'),
   body('status').optional({ values: 'undefined' }).isIn(['draft', 'active', 'archived']).withMessage('Status must be draft, active or archived'),
   optionalBoolean('featured'),
   optionalBoolean('newArrival'),
@@ -282,7 +267,6 @@ export const createProductValidator = [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('mainCategory').notEmpty().withMessage('Main category is required'),
   body('shortDescription').trim().notEmpty().withMessage('Short description is required'),
-  body('description').trim().notEmpty().withMessage('Description is required'),
   body('regularPrice').notEmpty().withMessage('Regular price is required'),
   body('variants').isArray({ min: 1 }).withMessage('At least one colour variant is required'),
 ];
