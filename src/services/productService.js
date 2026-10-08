@@ -400,7 +400,7 @@ function buildProductPayload(payload) {
         : Number(payload.shippingChargeAmount),
     shippingChargeApplies: payload.shippingChargeApplies === undefined ? true : Boolean(payload.shippingChargeApplies),
     variants: (payload.variants || []).map(normalizeVariant),
-    status: payload.status || 'draft',
+    status: payload.status || 'active',
     featured: Boolean(payload.featured),
     newArrival: Boolean(payload.newArrival),
     bestSeller: Boolean(payload.bestSeller),

@@ -271,7 +271,7 @@ const productSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ['draft', 'active', 'archived'],
-      default: 'draft',
+      default: 'active',
     },
     featured: {
       type: Boolean,
