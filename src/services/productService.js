@@ -18,6 +18,8 @@ const safeProductFields = [
   'style',
   'fabric',
   'occasion',
+  'widthInches',
+  'lengthInches',
   'tags',
   'shortDescription',
   'regularPrice',
@@ -44,6 +46,10 @@ function normalizeText(value, fallback = '') {
 function normalizeOptionalText(value) {
   const text = normalizeText(value);
   return text || undefined;
+}
+
+function normalizeOptionalMeasurement(value) {
+  return value === undefined || value === null || value === '' ? null : Number(value);
 }
 
 function slugify(value) {
@@ -363,6 +369,8 @@ function buildProductPayload(payload) {
     style: normalizeText(payload.style),
     fabric: normalizeText(payload.fabric),
     occasion: normalizeText(payload.occasion),
+    widthInches: normalizeOptionalMeasurement(payload.widthInches),
+    lengthInches: normalizeOptionalMeasurement(payload.lengthInches),
     tags: normalizeTags(payload.tags),
     shortDescription: normalizeText(payload.shortDescription),
     regularPrice: Number(payload.regularPrice),
@@ -400,6 +408,11 @@ function applyProductUpdates(product, payload) {
 
     if (['productType', 'style', 'fabric', 'occasion', 'metaTitle', 'metaDescription'].includes(field)) {
       product[field] = normalizeText(payload[field]);
+      return;
+    }
+
+    if (field === 'widthInches' || field === 'lengthInches') {
+      product[field] = normalizeOptionalMeasurement(payload[field]);
       return;
     }
 

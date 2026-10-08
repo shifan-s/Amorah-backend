@@ -201,6 +201,18 @@ const productSchema = new mongoose.Schema(
       maxlength: [80, 'Occasion must be at most 80 characters'],
       default: '',
     },
+    widthInches: {
+      type: Number,
+      min: [0.1, 'Dress width must be greater than zero'],
+      max: [500, 'Dress width must be at most 500 inches'],
+      default: null,
+    },
+    lengthInches: {
+      type: Number,
+      min: [0.1, 'Dress length must be greater than zero'],
+      max: [500, 'Dress length must be at most 500 inches'],
+      default: null,
+    },
     tags: {
       type: [String],
       default: [],
@@ -486,6 +498,8 @@ function toProductObject(product, { publicOnly = false } = {}) {
     style: product.style,
     fabric: product.fabric,
     occasion: product.occasion,
+    widthInches: product.widthInches ?? null,
+    lengthInches: product.lengthInches ?? null,
     tags: product.tags,
     shortDescription: product.shortDescription,
     regularPrice: product.regularPrice,

@@ -14,6 +14,8 @@ const allowedProductFields = [
   'style',
   'fabric',
   'occasion',
+  'widthInches',
+  'lengthInches',
   'tags',
   'shortDescription',
   'regularPrice',
@@ -140,6 +142,11 @@ const productBodyValidators = [
     .trim()
     .isLength({ max: 80 })
     .withMessage('Product discovery fields must be at most 80 characters'),
+  body(['widthInches', 'lengthInches'])
+    .optional({ values: 'null' })
+    .isFloat({ min: 0.1, max: 500 })
+    .withMessage('Dress measurements must be between 0.1 and 500 inches')
+    .toFloat(),
   body('tags')
     .optional({ values: 'undefined' })
     .isArray({ max: 20 })
