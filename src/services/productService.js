@@ -278,6 +278,25 @@ async function ensureSlugAvailable(slug, productId) {
   }
 }
 
+async function generateUniqueProductSlug(name, productId) {
+  const baseSlug = slugify(name);
+
+  if (!baseSlug) {
+    throw new ApiError(400, 'Product name must include letters or numbers', []);
+  }
+
+  const query = productId ? { _id: { $ne: productId } } : {};
+  let slug = baseSlug;
+  let suffix = 2;
+
+  while (await Product.exists({ ...query, slug })) {
+    slug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+
+  return slug;
+}
+
 export async function validateProductCategories(mainCategoryId, subcategoryId) {
   if (!mainCategoryId) {
     throw new ApiError(400, 'Main category is required', []);
@@ -357,7 +376,7 @@ function validateActiveProduct(product) {
 }
 
 function buildProductPayload(payload) {
-  const slug = payload.slug ? slugify(payload.slug) : slugify(payload.name);
+  const slug = payload.slug ? slugify(payload.slug) : '';
 
   return {
     name: normalizeText(payload.name),
@@ -454,9 +473,6 @@ function applyProductUpdates(product, payload) {
     product[field] = payload[field];
   });
 
-  if (Object.prototype.hasOwnProperty.call(payload, 'name') && !Object.prototype.hasOwnProperty.call(payload, 'slug')) {
-    product.slug = slugify(product.name);
-  }
 }
 
 async function findAdminProduct(productId) {
@@ -690,7 +706,11 @@ export async function createProduct(payload, adminUserId) {
   await validateProductCategories(productPayload.mainCategory, productPayload.subcategory);
   await assignMissingVariantSkus(productPayload.variants, productPayload);
   validateVariants(productPayload.variants);
-  await ensureSlugAvailable(productPayload.slug);
+  if (productPayload.slug) {
+    await ensureSlugAvailable(productPayload.slug);
+  } else {
+    productPayload.slug = await generateUniqueProductSlug(productPayload.name);
+  }
   await ensureSkuAvailable(productPayload.variants);
 
   const product = new Product({
@@ -712,8 +732,16 @@ export async function createProduct(payload, adminUserId) {
 
 export async function updateProduct(productId, payload, adminUserId) {
   const product = await findAdminProduct(productId);
+  const previousName = product.name;
 
   applyProductUpdates(product, payload);
+
+  if (
+    !Object.prototype.hasOwnProperty.call(payload, 'slug') &&
+    product.name !== previousName
+  ) {
+    product.slug = await generateUniqueProductSlug(product.name, product._id);
+  }
 
   await validateProductCategories(product.mainCategory, product.subcategory);
   validatePricing(product.regularPrice, product.salePrice);
