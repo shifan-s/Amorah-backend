@@ -6,6 +6,7 @@ import {
   getAdminCategory,
   getPublicCategories,
   getPublicCategoryBySlug,
+  mergeCategories,
   updateCategory,
 } from '../services/categoryService.js';
 
@@ -64,6 +65,16 @@ export const removeCategory = asyncHandler(async (req, res) => {
     data: {
       category,
     },
+  });
+});
+
+export const mergeCategory = asyncHandler(async (req, res) => {
+  const result = await mergeCategories(req.params.categoryId, req.body.targetCategoryId);
+
+  res.status(200).json({
+    success: true,
+    message: 'Category merged successfully',
+    data: result,
   });
 });
 

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   changeCategory,
   listAdminCategories,
+  mergeCategory,
   removeCategory,
   showAdminCategory,
   storeCategory,
@@ -13,6 +14,7 @@ import {
   categoryIdOnlyValidator,
   createCategoryValidator,
   listCategoryValidator,
+  mergeCategoryValidator,
   updateCategoryValidator,
 } from '../validators/categoryValidators.js';
 
@@ -22,6 +24,7 @@ router.use(authenticate, authorize('admin'));
 
 router.get('/', listCategoryValidator, validateRequest, listAdminCategories);
 router.post('/', createCategoryValidator, validateRequest, storeCategory);
+router.post('/:categoryId/merge', mergeCategoryValidator, validateRequest, mergeCategory);
 router.get('/:categoryId', categoryIdOnlyValidator, validateRequest, showAdminCategory);
 router.patch('/:categoryId', updateCategoryValidator, validateRequest, changeCategory);
 router.delete('/:categoryId', categoryIdOnlyValidator, validateRequest, removeCategory);

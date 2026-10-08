@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Category from '../models/Category.js';
+import Product from '../models/Product.js';
 import ApiError from '../utils/ApiError.js';
 
 function normalizeText(value, fallback = '') {
@@ -270,6 +271,85 @@ export async function deactivateCategory(categoryId) {
   await category.populate('parent', 'name slug level');
 
   return toSafeCategory(category);
+}
+
+export async function mergeCategories(sourceCategoryId, targetCategoryId) {
+  ensureCategoryId(sourceCategoryId);
+  ensureCategoryId(targetCategoryId);
+
+  if (sourceCategoryId === targetCategoryId) {
+    throw new ApiError(400, 'Choose a different category to merge into', []);
+  }
+
+  const session = await mongoose.startSession();
+  let result;
+
+  try {
+    await session.withTransaction(async () => {
+      const source = await Category.findById(sourceCategoryId).session(session);
+      const target = await Category.findById(targetCategoryId).session(session);
+
+      if (!source || !target) {
+        throw new ApiError(404, 'Category not found', []);
+      }
+
+      if (!target.isActive) {
+        throw new ApiError(400, 'Choose an active destination category', []);
+      }
+
+      if (source.level !== target.level) {
+        throw new ApiError(400, 'Categories must be the same type to merge', []);
+      }
+
+      if (
+        source.level === 1 &&
+        source.parent?.toString() !== target.parent?.toString()
+      ) {
+        throw new ApiError(400, 'Subcategories must have the same parent to merge', []);
+      }
+
+      let movedProducts;
+      let movedSubcategories = 0;
+
+      if (source.level === 0) {
+        const productResult = await Product.updateMany(
+          { mainCategory: source._id },
+          { $set: { mainCategory: target._id } },
+          { session },
+        );
+        movedProducts = productResult.modifiedCount;
+
+        const subcategoryResult = await Category.updateMany(
+          { parent: source._id },
+          { $set: { parent: target._id } },
+          { session },
+        );
+        movedSubcategories = subcategoryResult.modifiedCount;
+      } else {
+        const productResult = await Product.updateMany(
+          { subcategory: source._id },
+          { $set: { subcategory: target._id } },
+          { session },
+        );
+        movedProducts = productResult.modifiedCount;
+      }
+
+      source.isActive = false;
+      source.showOnHomepage = false;
+      source.showInNavigation = false;
+      await source.save({ session });
+
+      result = {
+        category: toSafeCategory(source),
+        movedProducts,
+        movedSubcategories,
+      };
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return result;
 }
 
 export async function getPublicCategories(query) {

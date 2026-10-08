@@ -129,3 +129,9 @@ export const createCategoryValidator = [
 
 export const updateCategoryValidator = [categoryIdValidator, ...categoryBodyValidators];
 export const categoryIdOnlyValidator = [categoryIdValidator];
+export const mergeCategoryValidator = [
+  categoryIdValidator,
+  body('targetCategoryId')
+    .isMongoId()
+    .withMessage('Destination category must be valid'),
+];
